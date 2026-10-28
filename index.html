@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>オンラインピアノ</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#fff8f5;--ink:#2f3b52;--coral:#e8815b;--sage:#6fa98c;--line:#e6dcd6;--white:#fff;--muted:#6b7385}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font-family:"Noto Sans JP",system-ui,sans-serif;-webkit-text-size-adjust:100%}
+main{max-width:880px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:22px;margin:0 0 4px}
+.sub{color:var(--muted);font-size:14px;margin:0 0 24px;text-wrap:balance}
+.box{border-top:1px solid var(--line);padding:20px 0}
+.label{font-size:13px;color:var(--muted);margin:0 0 8px}
+.status{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:700}
+.dot{width:10px;height:10px;border-radius:50%;background:#bbb}
+.dot.on{background:var(--sage)}
+.url{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.url code{background:var(--white);border:1px solid var(--line);padding:10px 12px;font-size:14px;word-break:break-all;flex:1 1 280px}
+button{font:inherit;cursor:pointer;color:var(--ink);background:var(--white);border:2px solid var(--ink);padding:10px 16px;font-weight:700;min-height:44px}
+button.main{border:3px solid var(--coral)}
+button.sel{background:var(--ink);color:var(--white)}
+button:disabled{opacity:.4;cursor:default}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.big{font-size:20px;padding:16px 28px}
+.root{font-size:28px;font-weight:700;min-width:96px;text-align:center}
+.kb{position:relative;height:150px;margin-top:8px;user-select:none;-webkit-user-select:none;touch-action:none;overflow-x:auto}
+.kb .inner{position:relative;height:100%}
+.w,.b{position:absolute;top:0;border:1px solid var(--ink)}
+.w{background:var(--white);height:100%;z-index:1}
+.b{background:var(--ink);height:60%;z-index:2}
+.w.hit{background:#fbd9cb}.b.hit{background:var(--coral)}
+.w.rootk::after{content:"";position:absolute;left:50%;bottom:10px;width:8px;height:8px;margin-left:-4px;background:var(--coral)}
+.w span{position:absolute;bottom:22px;width:100%;text-align:center;font-size:11px;color:var(--muted)}
+input[type=range]{width:200px}
+.note{font-size:56px;font-weight:700;min-height:72px}
+.hide{display:none}
+small{color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+
+<!-- 先生 -->
+<section id="teacher" class="hide">
+  <h1>オンラインピアノ（先生）</h1>
+  <p class="sub">押した音は、生徒さんの手元で鳴ります。声はいつものZoomで。</p>
+
+  <div class="box">
+    <p class="label">生徒さんに送るURL</p>
+    <div class="url"><code id="studentUrl">準備中…</code><button id="copy">コピー</button></div>
+    <p style="margin:12px 0 0"><span class="status"><span class="dot" id="tDot"></span><span id="tStatus">生徒さんを待っています</span></span></p>
+  </div>
+
+  <div class="box">
+    <p class="label">発声パターン</p>
+    <div class="row" id="patterns"></div>
+    <div class="row" style="margin-top:16px">
+      <button id="down" class="big">▼ 半音</button>
+      <div class="root" id="rootName">ド4</div>
+      <button id="up" class="big">▲ 半音</button>
+      <button id="play" class="big main">鳴らす</button>
+      <button id="stop">止める</button>
+    </div>
+    <div class="row" style="margin-top:16px">
+      <label><input type="checkbox" id="chord" checked> 最初に和音</label>
+      <label><input type="checkbox" id="autoplay" checked> ▲▼で続けて鳴らす</label>
+      <label><input type="checkbox" id="localSound" checked> 自分の側でも鳴らす</label>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <span class="label" style="margin:0">テンポ</span><input type="range" id="bpm" min="60" max="200" value="120"><span id="bpmVal">120</span>
+    </div>
+  </div>
+
+  <div class="box">
+    <p class="label">鍵盤（押した音がそのまま届きます・●はパターンの出だし）</p>
+    <div class="kb" id="tKb"><div class="inner"></div></div>
+  </div>
+</section>
+
+<!-- 生徒 -->
+<section id="student" class="hide">
+  <h1>オンラインピアノ</h1>
+  <p class="sub">先生のピアノが、この画面から鳴ります。Zoomはそのままで大丈夫です。</p>
+  <div class="box">
+    <button id="start" class="big main">音を出す</button>
+    <p id="startNote"><small>最初に1回だけ押してください。イヤホンがおすすめです。<br>iPhoneは、マナーモード（横のスイッチ）を切ると音が出ます。</small></p>
+    <p><span class="status"><span class="dot" id="sDot"></span><span id="sStatus">先生につないでいます…</span></span></p>
+  </div>
+  <div class="box">
+    <div class="note" id="nowNote"></div>
+    <div class="row"><span class="label" style="margin:0">音量</span><input type="range" id="vol" min="-30" max="6" value="0"></div>
+  </div>
+  <div class="box">
+    <div class="kb" id="sKb"><div class="inner"></div></div>
+  </div>
+</section>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+"use strict";
+const PREFIX = "mika-piano-";
+const NAMES = ["ド","ド#","レ","レ#","ミ","ファ","ファ#","ソ","ソ#","ラ","ラ#","シ"];
+const nameOf = m => NAMES[m % 12] + (Math.floor(m / 12) - 1);
+const toneName = m => ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"][m % 12] + (Math.floor(m / 12) - 1);
+const LOW = 48, HIGH = 79; // ド3〜ソ5
+
+const PATTERNS = [
+  { id: "single", label: "単音", steps: [0], len: 2 },
+  { id: "five", label: "ドレミファソファミレド", steps: [0,2,4,5,7,5,4,2,0], len: 1 },
+  { id: "three", label: "ドミソミド", steps: [0,4,7,4,0], len: 1 },
+  { id: "drmrd", label: "ドレミレド", steps: [0,2,4,2,0], len: 1 },
+  { id: "octave", label: "ドミソドソミド", steps: [0,4,7,12,7,4,0], len: 1 },
+  { id: "long", label: "ドー（長く）", steps: [0], len: 4 },
+];
+
+// ---- 音 ----
+let sampler = null, ready = false;
+function makeSampler() {
+  const files = {};
+  ["A1","C2","D#2","F#2","A2","C3","D#3","F#3","A3","C4","D#4","F#4","A4","C5","D#5","F#5","A5","C6"].forEach(n => files[n] = n.replace("#", "s") + ".mp3");
+  return new Promise(res => {
+    sampler = new Tone.Sampler({ urls: files, baseUrl: "https://tonejs.github.io/audio/salamander/", release: 1, onload: () => { ready = true; res(); } }).toDestination();
+  });
+}
+async function unlock() { await Tone.start(); if (!sampler) await makeSampler(); }
+
+// 合図（ev）を手元で鳴らす。パターンは手元の時計で刻むので、ネットの揺れでリズムが崩れない
+let scheduled = [];
+function stopAll() { scheduled.forEach(id => clearTimeout(id)); scheduled = []; if (sampler) sampler.releaseAll(); }
+function perform(ev, kb, show) {
+  if (!ready) return;
+  const now = Tone.now() + 0.03;
+  if (ev.type === "note") {
+    sampler.triggerAttackRelease(toneName(ev.midi), 1.2, now);
+    flash(kb, ev.midi, show);
+  } else if (ev.type === "pattern") {
+    stopAll();
+    const beat = 60 / ev.bpm;
+    let t = 0;
+    if (ev.chord) {
+      [0,4,7].forEach(i => sampler.triggerAttackRelease(toneName(ev.root + i), beat * 1.8, now));
+      flash(kb, ev.root, show);
+      t += beat * 2;
+    }
+    ev.steps.forEach(s => {
+      const m = ev.root + s, at = t;
+      sampler.triggerAttackRelease(toneName(m), beat * ev.len * 0.95, now + at);
+      scheduled.push(setTimeout(() => flash(kb, m, show), at * 1000));
+      t += beat * ev.len;
+    });
+  } else if (ev.type === "stop") {
+    stopAll();
+  }
+}
+
+// ---- 鍵盤 ----
+function buildKb(el, onPress) {
+  const inner = el.querySelector(".inner");
+  const whites = [];
+  for (let m = LOW; m <= HIGH; m++) if (![1,3,6,8,10].includes(m % 12)) whites.push(m);
+  const ww = Math.max(28, Math.floor((el.clientWidth || 360) / whites.length));
+  inner.style.width = (ww * whites.length) + "px";
+  const keys = {};
+  whites.forEach((m, i) => {
+    const k = document.createElement("div"); k.className = "w"; k.style.left = (i * ww) + "px"; k.style.width = ww + "px";
+    if (m % 12 === 0) { const s = document.createElement("span"); s.textContent = nameOf(m); k.appendChild(s); }
+    inner.appendChild(k); keys[m] = k;
+  });
+  for (let m = LOW; m <= HIGH; m++) if ([1,3,6,8,10].includes(m % 12)) {
+    const left = whites.indexOf(m - 1);
+    const k = document.createElement("div"); k.className = "b"; k.style.left = ((left + 1) * ww - ww * 0.3) + "px"; k.style.width = (ww * 0.6) + "px";
+    inner.appendChild(k); keys[m] = k;
+  }
+  if (onPress) Object.entries(keys).forEach(([m, k]) => k.addEventListener("pointerdown", e => { e.preventDefault(); onPress(+m); }));
+  el._keys = keys;
+}
+function flash(kb, m, show) {
+  const k = kb && kb._keys && kb._keys[m]; if (k) { k.classList.add("hit"); setTimeout(() => k.classList.remove("hit"), 350); }
+  if (show) show.textContent = nameOf(m);
+}
+function markRoot(kb, m) { Object.values(kb._keys).forEach(k => k.classList.remove("rootk")); if (kb._keys[m]) kb._keys[m].classList.add("rootk"); }
+
+// ---- 先生 ----
+function teacher() {
+  document.getElementById("teacher").classList.remove("hide");
+  let code = null;
+  try { code = localStorage.getItem("pianoRoom"); } catch (e) {}
+  if (!code) { const c = "abcdefghjkmnpqrstuvwxyz23456789"; code = Array.from({ length: 6 }, () => c[Math.floor(Math.random() * c.length)]).join(""); try { localStorage.setItem("pianoRoom", code); } catch (e) {} }
+  const url = location.origin + location.pathname + "?room=" + code;
+  document.getElementById("studentUrl").textContent = url;
+  document.getElementById("copy").onclick = () => navigator.clipboard.writeText(url).then(() => { document.getElementById("copy").textContent = "コピーしました"; });
+
+  const conns = new Set();
+  const dot = document.getElementById("tDot"), st = document.getElementById("tStatus");
+  const refresh = () => { const n = [...conns].filter(c => c.open).length; dot.classList.toggle("on", n > 0); st.textContent = n ? `生徒さんとつながっています（${n}人）` : "生徒さんを待っています"; };
+  let peer;
+  const open = () => {
+    peer = new Peer(PREFIX + code);
+    peer.on("connection", c => { conns.add(c); c.on("open", refresh); c.on("close", () => { conns.delete(c); refresh(); }); });
+    peer.on("disconnected", () => setTimeout(() => peer.reconnect(), 2000));
+    peer.on("error", e => { st.textContent = e.type === "unavailable-id" ? "このURLは別の窓で開いています。ほかの窓を閉じてください" : "つながりにくくなっています（自動でつなぎ直します）"; if (e.type !== "unavailable-id" && peer.destroyed) setTimeout(open, 3000); });
+  };
+  open();
+  const send = ev => { conns.forEach(c => c.open && c.send(ev)); if (document.getElementById("localSound").checked) perform(ev, tKb); };
+
+  // 状態
+  let pat = PATTERNS[1], root = 60;
+  const box = document.getElementById("patterns");
+  PATTERNS.forEach(p => { const b = document.createElement("button"); b.textContent = p.label; b.onclick = () => { pat = p; [...box.children].forEach(x => x.classList.toggle("sel", x === b)); }; if (p === pat) b.classList.add("sel"); box.appendChild(b); });
+  const bpm = document.getElementById("bpm"); bpm.oninput = () => document.getElementById("bpmVal").textContent = bpm.value;
+  const tKb = document.getElementById("tKb");
+  buildKb(tKb, m => { unlock(); send({ type: "note", midi: m }); });
+  const setRoot = m => { root = Math.min(HIGH - 12, Math.max(LOW, m)); document.getElementById("rootName").textContent = nameOf(root); markRoot(tKb, root); };
+  const play = () => { unlock(); send({ type: "pattern", root, steps: pat.steps, len: pat.len, bpm: +bpm.value, chord: document.getElementById("chord").checked }); };
+  document.getElementById("play").onclick = play;
+  document.getElementById("stop").onclick = () => send({ type: "stop" });
+  document.getElementById("up").onclick = () => { setRoot(root + 1); if (document.getElementById("autoplay").checked) play(); };
+  document.getElementById("down").onclick = () => { setRoot(root - 1); if (document.getElementById("autoplay").checked) play(); };
+  tKb.addEventListener("contextmenu", e => e.preventDefault());
+  // 鍵盤の長押しではなく、Shift+クリックでパターンの出だしを決める
+  Object.entries(tKb._keys).forEach(([m, k]) => k.addEventListener("pointerdown", e => { if (e.shiftKey) setRoot(+m); }));
+  document.addEventListener("keydown", e => { if (e.key === "ArrowUp") { e.preventDefault(); document.getElementById("up").click(); } if (e.key === "ArrowDown") { e.preventDefault(); document.getElementById("down").click(); } if (e.key === " ") { e.preventDefault(); play(); } });
+  setRoot(60);
+}
+
+// ---- 生徒 ----
+function student(code) {
+  document.getElementById("student").classList.remove("hide");
+  const dot = document.getElementById("sDot"), st = document.getElementById("sStatus");
+  const sKb = document.getElementById("sKb"); buildKb(sKb, null);
+  const show = document.getElementById("nowNote");
+  document.getElementById("vol").oninput = e => { Tone.Destination.volume.value = +e.target.value; };
+  document.getElementById("start").onclick = async () => {
+    const b = document.getElementById("start"); b.disabled = true; b.textContent = "準備中…";
+    await unlock(); b.textContent = "音が出る状態です"; document.getElementById("startNote").innerHTML = "<small>この画面を開いたままにしてください。</small>";
+    sampler.triggerAttackRelease("C4", 0.5);
+  };
+  let peer = new Peer(), conn = null;
+  const connect = () => {
+    if (peer.destroyed) peer = new Peer();
+    conn = peer.connect(PREFIX + code, { reliable: true });
+    conn.on("open", () => { dot.classList.add("on"); st.textContent = "先生とつながりました"; });
+    conn.on("data", ev => perform(ev, sKb, show));
+    conn.on("close", () => { dot.classList.remove("on"); st.textContent = "つなぎ直しています…"; setTimeout(connect, 2000); });
+  };
+  peer.on("open", connect);
+  peer.on("error", e => { dot.classList.remove("on"); st.textContent = e.type === "peer-unavailable" ? "先生の画面がまだ開いていません（開いたら自動でつながります）" : "つなぎ直しています…"; setTimeout(() => { if (!conn || !conn.open) connect(); }, 3000); });
+}
+
+const room = new URLSearchParams(location.search).get("room");
+room ? student(room.replace(/[^a-z0-9]/g, "")) : teacher();
+</script>
+</body>
+</html>
