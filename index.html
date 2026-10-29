@@ -78,6 +78,21 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
 .lyt{font-size:28px;font-weight:700;line-height:1.35;min-height:38px;overflow-wrap:anywhere}
 .lyn{font-size:14px;color:var(--muted);min-height:20px;overflow-wrap:anywhere}
 .keyv{font-size:18px;font-weight:700;min-width:84px;text-align:center}
+/* 先生の画面のタブ（スケールと伴奏の再生ボタンが隣り合わないように分ける） */
+.tabs{display:grid;grid-template-columns:1fr 1fr;margin-top:20px;border-bottom:3px solid var(--ink)}
+.tabs button{font-size:20px;min-height:60px;border:2px solid var(--ink);border-bottom:0;background:var(--white);color:var(--ink)}
+.tabs button+button{border-left:0}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--white)}
+.pane>.box:first-child{border-top:0}
+.grid .editor{flex:1 1 100%;margin:0}
+.editor{user-select:text;-webkit-user-select:text}
+.shift{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.shift button{padding:8px 4px}
+@media (min-width:640px){.shift{grid-template-columns:repeat(6,1fr)}}
+#gridMsg{display:block;min-height:18px;color:var(--coral)}
+#edMsg{display:block;margin-top:8px}
+#edIns{width:100%}
+.insub{display:block;font-size:13px;font-weight:400}
 </style>
 </head>
 <body>
@@ -94,6 +109,12 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
     <p style="margin:12px 0 0"><span class="status"><span class="dot" id="tDot"></span><span id="tStatus">生徒さんを待っています</span></span></p>
   </div>
 
+  <div class="tabs" role="tablist" aria-label="先生の画面">
+    <button id="tabScale" role="tab" data-tab="scale" aria-selected="true">スケール</button>
+    <button id="tabAcc" role="tab" data-tab="acc" aria-selected="false">伴奏</button>
+  </div>
+
+  <div id="paneScale" class="pane" role="tabpanel" aria-labelledby="tabScale">
   <div class="box">
     <p class="label">発声パターン</p>
     <div class="row" id="patterns"></div>
@@ -101,6 +122,8 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
       <button id="down" class="big">▼ 半音</button>
       <div class="root" id="rootName">ド4</div>
       <button id="up" class="big">▲ 半音</button>
+    </div>
+    <div class="row" style="margin-top:12px">
       <button id="play" class="big main">鳴らす</button>
       <button id="stop">止める</button>
     </div>
@@ -126,25 +149,23 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
     <p class="label">鍵盤（押した音がそのまま届きます・●はパターンの出だし）</p>
     <div class="kb" id="tKb"><div class="inner"></div></div>
   </div>
+  </div>
 
+  <div id="paneAcc" class="pane" role="tabpanel" aria-labelledby="tabAcc">
   <div class="box" id="acc">
-    <p class="label">伴奏</p>
-    <div class="row">
-      <input class="txt" id="songName" aria-label="曲名" placeholder="曲名">
-      <button id="songSave">保存</button>
+    <div class="lynow" id="lyBox" style="margin-top:0" aria-live="off">
+      <div class="lyc" id="lyChord"></div>
+      <div class="lyt" id="lyText"></div>
+      <div class="lyn" id="lyNext">鳴らすと、いまのコードと歌詞がここに出ます</div>
     </div>
-    <div class="row" style="margin-top:8px">
-      <select id="songList" aria-label="保存した曲"></select>
-      <button id="songOpen">開く</button><button id="songDel">消す</button>
+    <div class="row" style="margin-top:12px">
+      <button id="songPlay" class="big main">伴奏を鳴らす</button>
+      <button id="songStop" class="big">止める</button>
     </div>
 
-    <p class="sublabel">コード（ネットのコード譜をそのまま貼れます・小節は | で区切る）</p>
-    <textarea id="chordText" rows="3" placeholder="| C ここで ひといき | Am | F さびの G はじまり | C |"></textarea>
-    <small>コードの後ろに歌詞を書けます。A や Am のように、コードと同じ形の言葉はコードとして読みます。</small>
-    <div class="row" style="margin-top:8px"><button id="chordRead">グリッドに入れる</button><small id="chordMsg"></small></div>
-
-    <p class="sublabel">グリッド（コードは指で動かせます・空いたマスを押すと足せます）</p>
+    <p class="sublabel">グリッド（コードは指で動かせます・別の段へも動かせます・空いたマスを押すと足せます）</p>
     <div class="grid" id="grid"></div>
+    <small id="gridMsg" role="status"></small>
     <div class="editor hide" id="editor">
       <p class="label" id="edWhere" style="margin-bottom:8px"></p>
       <div class="row">
@@ -154,9 +175,22 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
       <div class="row" style="margin-top:8px">
         <button id="edOk" class="main">決める</button><button id="edDel">消す</button><button id="edCancel">やめる</button>
       </div>
-      <small id="edMsg"></small>
+      <div id="edShift">
+        <p class="label" style="margin:14px 0 6px">このコードから後ろを全部ずらす</p>
+        <div class="shift">
+          <button data-d="-bar">−1小節</button><button data-d="-2">−1拍</button><button data-d="-1">−半拍</button>
+          <button data-d="1">＋半拍</button><button data-d="2">＋1拍</button><button data-d="bar">＋1小節</button>
+        </div>
+      </div>
+      <div id="edInsert" style="margin-top:12px"><button id="edIns">ここに1小節入れる<span class="insub">（後ろを1小節ずらす）</span></button></div>
+      <small id="edMsg" role="status"></small>
     </div>
     <div class="row" style="margin-top:8px"><button id="barAdd">＋1小節</button><button id="barDel">−1小節</button></div>
+
+    <p class="sublabel">コード（ネットのコード譜をそのまま貼れます・小節は | で区切る）</p>
+    <textarea id="chordText" rows="3" placeholder="| C ここで ひといき | Am | F さびの G はじまり | C |"></textarea>
+    <small>コードの後ろに歌詞を書けます。A や Am のように、コードと同じ形の言葉はコードとして読みます。</small>
+    <div class="row" style="margin-top:8px"><button id="chordRead">グリッドに入れる</button><small id="chordMsg"></small></div>
 
     <p class="sublabel">区切り</p>
     <div class="row" id="secNames"></div>
@@ -189,14 +223,15 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
       <label><input type="checkbox" id="countIn" checked> 最初に1小節カウント</label>
     </div>
     <div class="row" id="loopRow" style="margin-top:8px"></div>
-    <div class="lynow" id="lyBox" aria-live="off">
-      <div class="lyc" id="lyChord"></div>
-      <div class="lyt" id="lyText"></div>
-      <div class="lyn" id="lyNext">鳴らすと、いまのコードと歌詞がここに出ます</div>
+
+    <p class="sublabel">曲の保存</p>
+    <div class="row">
+      <input class="txt" id="songName" aria-label="曲名" placeholder="曲名">
+      <button id="songSave">保存</button>
     </div>
-    <div class="row" style="margin-top:16px">
-      <button id="songPlay" class="big main">伴奏を鳴らす</button>
-      <button id="songStop" class="big">止める</button>
+    <div class="row" style="margin-top:8px">
+      <select id="songList" aria-label="保存した曲"></select>
+      <button id="songOpen">開く</button><button id="songDel">消す</button>
     </div>
 
     <details>
@@ -205,6 +240,7 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
       <textarea id="ioText" rows="4" aria-label="曲のデータ"></textarea>
       <small id="ioMsg"></small>
     </details>
+  </div>
   </div>
 </section>
 
@@ -597,9 +633,33 @@ function teacher() {
   tKb.addEventListener("contextmenu", e => e.preventDefault());
   // 鍵盤の長押しではなく、Shift+クリックでパターンの出だしを決める
   Object.entries(tKb._keys).forEach(([m, k]) => k.addEventListener("pointerdown", e => { if (e.shiftKey) setRoot(+m); }));
-  document.addEventListener("keydown", e => { if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && e.target.type !== "range" && e.target.type !== "checkbox") return; if (e.key === "ArrowUp") { e.preventDefault(); document.getElementById("up").click(); } if (e.key === "ArrowDown") { e.preventDefault(); document.getElementById("down").click(); } if (e.key === " ") { e.preventDefault(); play(); } });
+  // スペース・矢印は「スケール」の画面のときだけ。文字を打っている間は効かせない
+  let tab = "scale";
+  document.addEventListener("keydown", e => {
+    if (tab !== "scale" || e.metaKey || e.ctrlKey || e.altKey) return;
+    const t = e.target;
+    if (t && (t.isContentEditable || /^(TEXTAREA|SELECT)$/.test(t.tagName) || (t.tagName === "INPUT" && t.type !== "range" && t.type !== "checkbox"))) return;
+    if (e.key === "ArrowUp") { e.preventDefault(); document.getElementById("up").click(); }
+    if (e.key === "ArrowDown") { e.preventDefault(); document.getElementById("down").click(); }
+    if (e.key === " ") { e.preventDefault(); play(); }
+  });
   setRoot(60);
   accHead = setupAcc(send);
+
+  // タブ：スケール／伴奏。切り替えたら、鳴っているものは止める（生徒さんの側も）
+  const tabs = { scale: document.getElementById("paneScale"), acc: document.getElementById("paneAcc") };
+  const showTab = (name, quiet) => {
+    if (!tabs[name]) name = "scale";
+    const changedTab = name !== tab; tab = name;
+    Object.entries(tabs).forEach(([k, el]) => el.classList.toggle("hide", k !== name));
+    document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
+    try { localStorage.setItem("pianoTab", name); } catch (e) {}
+    if (name === "acc") accHead.redraw();
+    if (changedTab && !quiet) send({ type: "stop" });
+  };
+  document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => { if (b.dataset.tab !== tab) showTab(b.dataset.tab); });
+  let lastTab = null; try { lastTab = localStorage.getItem("pianoTab"); } catch (e) {}
+  showTab(lastTab === "acc" ? "acc" : "scale", true);
 }
 
 // ---- 先生：伴奏 ----
@@ -668,7 +728,9 @@ function setupAcc(send) {
   let cw = 22, drag = null;
   const chordAtPos = (bar, beat) => song.chords.find(c => c.bar === bar && c.beat === beat);
   const beatName = b => `${Math.floor(b) + 1}拍目${b % 1 ? "のウラ" : ""}`;
+  const ed = $("editor");
   function drawGrid() {
+    if (ed.parentNode === grid) grid.after(ed); // ポップアップは消さずに外へ出してから描き直す
     grid.innerHTML = "";
     const m = song.meter, W = grid.clientWidth || 358, per = W >= 640 ? 4 : 2, anyLy = song.chords.some(c => c.lyric);
     cw = Math.max(14, Math.min(30, Math.floor((W - (per - 1) * 6 - per * 2 - 2) / (per * m * 2))));
@@ -698,40 +760,72 @@ function setupAcc(send) {
       });
       bar.appendChild(h); bar.appendChild(body); grid.appendChild(bar);
     }
-  }
-  // 画面上の点 → どの小節の何拍目か
-  const cellAt = (x, y) => {
-    for (const body of grid.querySelectorAll(".bb")) {
-      const r = body.getBoundingClientRect();
-      if (y >= r.top - 8 && y <= r.bottom + 8 && x >= r.left - cw / 2 && x <= r.right) {
-        const k = Math.max(0, Math.min(song.meter * 2 - 1, Math.floor((x - r.left) / cw)));
-        return { bar: +body.parentNode.dataset.bar, beat: k / 2, el: body.children[k] };
-      }
+    // ポップアップは、押した小節の段のすぐ下に出す
+    if (editing && !ed.classList.contains("hide")) {
+      const bars = grid.children, tb = bars[editing.bar];
+      if (tb) { let j = editing.bar; while (j + 1 < bars.length && bars[j + 1].offsetTop === tb.offsetTop) j++; bars[j].after(ed); }
     }
-    return null;
+  }
+  // 画面上の点 → どの小節の何拍目か（どの段でも。段のすき間や小節の見出しの上でも、いちばん近い小節に寄せる）
+  const cellAt = (x, y) => {
+    let best = null, bs = Infinity;
+    for (const body of grid.querySelectorAll(".bb")) {
+      const r = body.getBoundingClientRect(), top = r.top - 22; // 見出し（小節番号）の上も、その小節
+      const dy = y < top ? top - y : y > r.bottom ? y - r.bottom : 0;
+      const dx = x < r.left ? r.left - x : x > r.right ? x - r.right : 0;
+      if (dy > 24 || dx > cw * 3) continue;
+      const sc = dy * 1000 + dx;
+      if (sc < bs) { bs = sc; best = { body, r }; }
+    }
+    if (!best) return null;
+    const k = Math.max(0, Math.min(song.meter * 2 - 1, Math.floor((x - best.r.left) / cw)));
+    return { bar: +best.body.parentNode.dataset.bar, beat: k / 2, el: best.body.children[k] };
   };
+  const gridMsg = t => { $("gridMsg").textContent = t || ""; };
+  // ドラッグ：どの段のどの小節へも。画面の上下のはしに寄せると、ページが動く
   function bindDrag(blk, c) {
+    const place = () => {
+      const d = drag;
+      blk.style.transform = `translate(${d.cx - d.x0}px,${d.cy + scrollY - d.y0}px)`;
+      const t = cellAt(d.cx - d.gx + cw / 2, d.cy);
+      if (d.tgt && d.tgt.el) d.tgt.el.classList.remove("tgt");
+      d.tgt = t; if (t && t.el) t.el.classList.add("tgt");
+    };
+    const edgeScroll = () => {
+      const d = drag; if (!d || d.blk !== blk) return;
+      const E = 70, h = innerHeight;
+      const v = d.cy < E ? -Math.ceil((E - d.cy) / 4) : d.cy > h - E ? Math.ceil((d.cy - (h - E)) / 4) : 0;
+      if (v) { const y = scrollY; scrollBy(0, v); if (scrollY !== y) place(); }
+      d.raf = requestAnimationFrame(edgeScroll);
+    };
     blk.addEventListener("pointerdown", e => {
+      if (e.button > 0) return;
       e.preventDefault(); e.stopPropagation();
       try { blk.setPointerCapture(e.pointerId); } catch (err) {}
       const r = blk.getBoundingClientRect();
-      drag = { c, blk, id: e.pointerId, x0: e.clientX, y0: e.clientY, gx: e.clientX - r.left, moved: false, tgt: null };
+      drag = { c, blk, id: e.pointerId, x0: e.clientX, y0: e.clientY + scrollY, cx: e.clientX, cy: e.clientY, gx: e.clientX - r.left, moved: false, tgt: null, raf: 0 };
     });
     blk.addEventListener("pointermove", e => {
       if (!drag || drag.blk !== blk || e.pointerId !== drag.id) return;
-      const dx = e.clientX - drag.x0, dy = e.clientY - drag.y0;
-      if (!drag.moved && Math.hypot(dx, dy) < 6) return;
-      drag.moved = true; blk.classList.add("drag"); blk.style.transform = `translate(${dx}px,${dy}px)`;
-      const t = cellAt(e.clientX - drag.gx + cw / 2, e.clientY);
-      if (drag.tgt && drag.tgt.el) drag.tgt.el.classList.remove("tgt");
-      drag.tgt = t; if (t && t.el) t.el.classList.add("tgt");
+      drag.cx = e.clientX; drag.cy = e.clientY;
+      if (!drag.moved && Math.hypot(e.clientX - drag.x0, e.clientY + scrollY - drag.y0) < 6) return;
+      if (!drag.moved) {
+        drag.moved = true; blk.classList.add("drag"); gridMsg("");
+        if (editing) { editing = null; ed.classList.add("hide"); } // 動かし始めたらポップアップは閉じる
+        drag.raf = requestAnimationFrame(edgeScroll);
+      }
+      place();
     });
     const end = e => {
       if (!drag || drag.blk !== blk) return;
-      const d = drag; drag = null;
+      const d = drag; drag = null; cancelAnimationFrame(d.raf);
       if (!d.moved) { if (e.type === "pointerup") openEditor(c.bar, c.beat, c); return; }
       const t = d.tgt;
-      if (e.type === "pointerup" && t && !chordAtPos(t.bar, t.beat)) { c.bar = t.bar; c.beat = t.beat; song.chords.sort((a, b) => a.bar - b.bar || a.beat - b.beat); }
+      if (e.type === "pointerup" && t) {
+        const o = chordAtPos(t.bar, t.beat);
+        if (o && o !== c) gridMsg("そこには別のコードがあります");
+        else { c.bar = t.bar; c.beat = t.beat; song.chords.sort((a, b) => a.bar - b.bar || a.beat - b.beat); }
+      }
       changed();
     };
     blk.addEventListener("pointerup", end); blk.addEventListener("pointercancel", end);
@@ -740,12 +834,53 @@ function setupAcc(send) {
   // --- コードを足す・直す ---
   function openEditor(bar, beat, c) {
     editing = { bar, beat, c };
-    $("editor").classList.remove("hide");
+    ed.classList.remove("hide"); gridMsg("");
     $("edWhere").textContent = `${bar + 1}小節目・${beatName(beat)}`;
     $("edSym").value = c ? c.sym : ""; $("edLyric").value = c && c.lyric ? c.lyric : ""; $("edMsg").textContent = "";
     $("edDel").classList.toggle("hide", !c); $("edOk").textContent = c ? "決める" : "足す";
-    drawGrid(); $("edSym").focus();
+    $("edShift").classList.toggle("hide", !c); $("edInsert").classList.toggle("hide", !!c);
+    drawGrid(); $("edSym").focus({ preventScroll: true });
   }
+  // --- ここから後ろを全部ずらす（半拍単位）。前のコードを追い越す・0拍より前・200小節より後ろは止める ---
+  const HB = () => song.meter * 2;
+  const posOf = c => c.bar * HB() + c.beat * 2;
+  function shiftFrom(p0, d, addBar) {
+    const S = song.chords.filter(c => posOf(c) >= p0);
+    if (S.length) {
+      const lo = Math.min(...S.map(posOf)) + d, hi = Math.max(...S.map(posOf)) + d;
+      if (lo < 0) return "これより前には動かせません";
+      const prev = song.chords.filter(c => posOf(c) < p0).map(posOf);
+      if (prev.length && lo <= Math.max(...prev)) return "前のコードと重なるので動かせません";
+      if (Math.floor(hi / HB()) + 1 > 200) return "200小節より後ろには動かせません";
+    }
+    if (addBar && song.bars >= 200) return "200小節より多くはできません";
+    S.forEach(c => { const p = posOf(c) + d; c.bar = Math.floor(p / HB()); c.beat = (p % HB()) / 2; });
+    const need = S.length ? Math.max(...S.map(c => c.bar)) + 1 : 0;
+    song.bars = Math.max(song.bars + (addBar ? 1 : 0), need);
+    song.chords.sort((a, b) => a.bar - b.bar || a.beat - b.beat);
+    return "";
+  }
+  const SHIFT_NAME = { "-bar": "1小節前へ", "-2": "1拍前へ", "-1": "半拍前へ", "1": "半拍うしろへ", "2": "1拍うしろへ", "bar": "1小節うしろへ" };
+  ed.querySelectorAll("#edShift button").forEach(b => b.onclick = () => {
+    if (!editing || !editing.c) return;
+    const k = b.dataset.d, d = k === "bar" ? HB() : k === "-bar" ? -HB() : +k, c = editing.c;
+    const n = song.chords.filter(x => posOf(x) >= posOf(c)).length;
+    const err = shiftFrom(posOf(c), d, false);
+    if (err) { $("edMsg").textContent = err; return; }
+    editing = { bar: c.bar, beat: c.beat, c };
+    $("edWhere").textContent = `${c.bar + 1}小節目・${beatName(c.beat)}`;
+    changed();
+    $("edMsg").textContent = `${n}個のコードを${SHIFT_NAME[k]}ずらしました`;
+  });
+  $("edIns").onclick = () => {
+    if (!editing || editing.c) return;
+    const p0 = editing.bar * HB() + editing.beat * 2;
+    const n = song.chords.filter(x => posOf(x) >= p0).length;
+    const err = shiftFrom(p0, HB(), true);
+    if (err) { $("edMsg").textContent = err; return; }
+    editing = null; ed.classList.add("hide"); changed();
+    gridMsg(`1小節入れました（後ろの${n}個のコードを1小節ずらしました）`);
+  };
   const closeEditor = () => { editing = null; $("editor").classList.add("hide"); drawGrid(); };
   $("edOk").onclick = () => {
     if (!editing) return;
@@ -924,7 +1059,7 @@ function setupAcc(send) {
       if (key !== lastKey) {
         lastKey = key; clearNow();
         if (seg) {
-          const bar = grid.children[Math.floor(k / (song.meter * 2))];
+          const bar = grid.querySelectorAll(".bar")[Math.floor(k / (song.meter * 2))];
           if (bar) { bar.classList.add("nowbar"); const cell = bar.querySelector(".bb").children[k % (song.meter * 2)]; if (cell) cell.classList.add("now"); }
         }
         const si = seg && !loopId && song.order.length ? seg.si : -1;
@@ -945,9 +1080,11 @@ function setupAcc(send) {
     if (!$("editor").classList.contains("hide") && !editing) $("editor").classList.add("hide");
     drawGrid(); drawSections();
   }
-  let rw = 0; addEventListener("resize", () => { if (grid.clientWidth !== rw) { rw = grid.clientWidth; drawGrid(); } });
-  fillList(null); drawAll();
-  return { stop: stopHead };
+  let rw = 0;
+  const redraw = () => { if (grid.clientWidth && grid.clientWidth !== rw) { rw = grid.clientWidth; drawGrid(); } };
+  addEventListener("resize", redraw);
+  fillList(null); drawAll(); rw = grid.clientWidth;
+  return { stop: stopHead, redraw };
 }
 
 // ---- 生徒 ----
