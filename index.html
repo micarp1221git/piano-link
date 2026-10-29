@@ -72,7 +72,15 @@ small{color:var(--muted)}
       <label><input type="checkbox" id="localSound" checked> 自分の側でも鳴らす</label>
     </div>
     <div class="row" style="margin-top:12px">
-      <span class="label" style="margin:0">テンポ</span><input type="range" id="bpm" min="60" max="200" value="120"><span id="bpmVal">120</span>
+      <span class="label" style="margin:0">テンポ</span><input type="range" id="bpm" min="40" max="200" value="120"><span id="bpmVal">120</span>
+    </div>
+    <div class="row" style="margin-top:12px" id="nvRow">
+      <span class="label" style="margin:0">音符</span>
+      <button data-nv="1" class="sel">4分音符</button><button data-nv="0.5">8分音符</button><button data-nv="0.25">16分音符</button>
+    </div>
+    <div class="row" style="margin-top:12px" id="meterRow">
+      <span class="label" style="margin:0">拍子</span>
+      <button data-meter="2">2拍子</button><button data-meter="3">3拍子</button><button data-meter="4" class="sel">4拍子</button>
     </div>
   </div>
 
@@ -144,18 +152,21 @@ function perform(ev, kb, show) {
     flash(kb, ev.midi, show);
   } else if (ev.type === "pattern") {
     stopAll();
-    const beat = 60 / ev.bpm;
-    let t = 0;
+    const beat = 60 / ev.bpm, meter = ev.meter || 4, nv = ev.nv || 1;
+    // 1拍=4分音符。音符の長さ（nv）は、1音ずつ刻むパターン（len=1）だけに効かせる。小節の頭の音は少し強く
+    const stepBeats = ev.len === 1 ? nv : ev.len;
+    let t = 0, pos = 0;
     if (ev.chord) {
-      [0,4,7].forEach(i => sampler.triggerAttackRelease(toneName(ev.root + i), beat * 1.8, now));
+      [0,4,7].forEach(i => sampler.triggerAttackRelease(toneName(ev.root + i), beat * (meter - 0.2), now, 0.8));
       flash(kb, ev.root, show);
-      t += beat * 2;
+      t += beat * meter;
     }
     ev.steps.forEach(s => {
       const m = ev.root + s, at = t;
-      sampler.triggerAttackRelease(toneName(m), beat * ev.len * 0.95, now + at);
+      const down = Math.abs(pos % meter) < 1e-6;
+      sampler.triggerAttackRelease(toneName(m), beat * stepBeats * 0.95, now + at, down ? 0.95 : 0.65);
       scheduled.push(setTimeout(() => flash(kb, m, show), at * 1000));
-      t += beat * ev.len;
+      t += beat * stepBeats; pos += stepBeats;
     });
   } else if (ev.type === "stop") {
     stopAll();
@@ -216,11 +227,14 @@ function teacher() {
   let pat = PATTERNS[1], root = 60;
   const box = document.getElementById("patterns");
   PATTERNS.forEach(p => { const b = document.createElement("button"); b.textContent = p.label; b.onclick = () => { pat = p; [...box.children].forEach(x => x.classList.toggle("sel", x === b)); }; if (p === pat) b.classList.add("sel"); box.appendChild(b); });
+  let nv = 1, meter = 4;
+  const pick = (rowId, attr, set) => { const row = document.getElementById(rowId); row.querySelectorAll("button").forEach(b => b.onclick = () => { row.querySelectorAll("button").forEach(x => x.classList.toggle("sel", x === b)); set(+b.dataset[attr]); }); };
+  pick("nvRow", "nv", v => nv = v); pick("meterRow", "meter", v => meter = v);
   const bpm = document.getElementById("bpm"); bpm.oninput = () => document.getElementById("bpmVal").textContent = bpm.value;
   const tKb = document.getElementById("tKb");
   buildKb(tKb, m => { unlock(); send({ type: "note", midi: m }); });
   const setRoot = m => { root = Math.min(HIGH - 12, Math.max(LOW, m)); document.getElementById("rootName").textContent = nameOf(root); markRoot(tKb, root); };
-  const play = () => { unlock(); send({ type: "pattern", root, steps: pat.steps, len: pat.len, bpm: +bpm.value, chord: document.getElementById("chord").checked }); };
+  const play = () => { unlock(); send({ type: "pattern", root, steps: pat.steps, len: pat.len, bpm: +bpm.value, nv, meter, chord: document.getElementById("chord").checked }); };
   document.getElementById("play").onclick = play;
   document.getElementById("stop").onclick = () => send({ type: "stop" });
   document.getElementById("up").onclick = () => { setRoot(root + 1); if (document.getElementById("autoplay").checked) play(); };
