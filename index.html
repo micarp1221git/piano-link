@@ -40,6 +40,36 @@ input[type=range]{width:200px}
 .note{font-size:56px;font-weight:700;min-height:72px}
 .hide{display:none}
 small{color:var(--muted)}
+/* 伴奏 */
+textarea,.txt,select,input[type=number]{font:inherit;font-size:16px;color:var(--ink);background:var(--white);border:1px solid var(--line);padding:8px 10px;min-height:44px;border-radius:0}
+textarea{width:100%;display:block;resize:vertical}
+input[type=number]{width:72px}
+.txt{flex:1 1 160px;min-width:0}
+select{flex:1 1 140px;min-width:0}
+.sublabel{font-size:13px;color:var(--muted);margin:20px 0 8px}
+.grid{display:flex;flex-wrap:wrap;gap:6px;overflow-x:auto;padding:2px 0 8px;user-select:none;-webkit-user-select:none}
+.bar{flex:none;border:1px solid var(--line);border-top:3px solid var(--line);background:var(--white)}
+.bar.insec{border-top-color:var(--sage)}
+.bar.nowbar{border-color:var(--coral)}
+.bh{font-size:11px;color:var(--muted);height:20px;padding:0 4px;display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden}
+.bh b{color:var(--sage)}
+.bb{position:relative;height:46px;display:flex}
+.cell{flex:none;height:100%;border-left:1px dotted var(--line);font-size:9px;color:#c3b8b1;padding:2px 0 0 2px;cursor:pointer}
+.cell:first-child{border-left:0}
+.cell.beat{border-left:1px solid #d9cdc6}
+.cell.tgt{background:#fbd9cb}
+.cell.now{background:#fde3d6}
+.blk{position:absolute;top:5px;bottom:5px;background:var(--ink);color:var(--white);font-size:13px;font-weight:700;display:flex;align-items:center;padding:0 4px;overflow:hidden;white-space:nowrap;touch-action:none;cursor:grab;z-index:2;border:1px solid var(--white);letter-spacing:-.02em}
+.blk.drag{opacity:.7;z-index:5;cursor:grabbing}
+.blk.picked{background:var(--coral)}
+.editor{margin-top:8px;padding:12px;border:2px solid var(--coral);background:var(--white)}
+.chip{display:inline-flex;align-items:center;border:1px solid var(--ink);background:var(--white);font-size:14px;font-weight:700;padding:0 0 0 10px;min-height:44px}
+.chip button{border:0;min-height:42px;padding:6px 10px;background:transparent;font-weight:400}
+.chip.now{background:#fde3d6}
+.cand{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:14px;margin-top:8px}
+details{margin-top:20px}
+summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
+.keyv{font-size:18px;font-weight:700;min-width:84px;text-align:center}
 </style>
 </head>
 <body>
@@ -87,6 +117,77 @@ small{color:var(--muted)}
   <div class="box">
     <p class="label">鍵盤（押した音がそのまま届きます・●はパターンの出だし）</p>
     <div class="kb" id="tKb"><div class="inner"></div></div>
+  </div>
+
+  <div class="box" id="acc">
+    <p class="label">伴奏</p>
+    <div class="row">
+      <input class="txt" id="songName" aria-label="曲名" placeholder="曲名">
+      <button id="songSave">保存</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <select id="songList" aria-label="保存した曲"></select>
+      <button id="songOpen">開く</button><button id="songDel">消す</button>
+    </div>
+
+    <p class="sublabel">コード（ネットのコード譜をそのまま貼れます・小節は | で区切る）</p>
+    <textarea id="chordText" rows="3" placeholder="| C | Am | F G | C |"></textarea>
+    <div class="row" style="margin-top:8px"><button id="chordRead">グリッドに入れる</button><small id="chordMsg"></small></div>
+
+    <p class="sublabel">グリッド（コードは指で動かせます・空いたマスを押すと足せます）</p>
+    <div class="grid" id="grid"></div>
+    <div class="editor hide" id="editor">
+      <p class="label" id="edWhere" style="margin-bottom:8px"></p>
+      <div class="row">
+        <input class="txt" id="edSym" aria-label="コード" placeholder="例: Am7" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <button id="edOk" class="main">決める</button><button id="edDel">消す</button><button id="edCancel">やめる</button>
+      </div>
+      <small id="edMsg"></small>
+    </div>
+    <div class="row" style="margin-top:8px"><button id="barAdd">＋1小節</button><button id="barDel">−1小節</button></div>
+
+    <p class="sublabel">区切り</p>
+    <div class="row" id="secNames"></div>
+    <div class="row" style="margin-top:8px">
+      <input type="number" id="secFrom" min="1" value="1" aria-label="はじめの小節"><span>〜</span><input type="number" id="secTo" min="1" value="4" aria-label="おわりの小節"><span>小節</span>
+      <button id="secSet">この名前をつける</button>
+    </div>
+    <div class="row" id="secList" style="margin-top:8px"></div>
+    <div id="secSuggest"></div>
+
+    <p class="sublabel">弾く順番（区切りを押すと後ろに足せます・空なら頭から最後まで）</p>
+    <div class="row" id="orderAdd"></div>
+    <div class="row" id="orderList" style="margin-top:8px"></div>
+
+    <p class="sublabel">弾き方</p>
+    <div class="row" id="rhRow"><span class="label" style="margin:0">右手</span>
+      <button data-v="q">4分で刻む</button><button data-v="e">8分で刻む</button><button data-v="arp">アルペジオ</button><button data-v="hold">伸ばす</button>
+    </div>
+    <div class="row" id="lhRow" style="margin-top:8px"><span class="label" style="margin:0">左手</span>
+      <button data-v="q">4分</button><button data-v="h">2分</button><button data-v="w">全音符</button><button data-v="dot">ターーン・タ・ターーン</button>
+    </div>
+    <div class="row" id="sMeterRow" style="margin-top:8px"><span class="label" style="margin:0">拍子</span>
+      <button data-v="2">2拍子</button><button data-v="3">3拍子</button><button data-v="4">4拍子</button>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <span class="label" style="margin:0">テンポ</span><input type="range" id="sBpm" min="40" max="200" value="90"><span id="sBpmVal">90</span>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button id="keyDown">▼</button><span class="keyv" id="keyVal">キー ±0</span><button id="keyUp">▲</button>
+      <label><input type="checkbox" id="countIn" checked> 最初に1小節カウント</label>
+    </div>
+    <div class="row" id="loopRow" style="margin-top:8px"></div>
+    <div class="row" style="margin-top:16px">
+      <button id="songPlay" class="big main">伴奏を鳴らす</button>
+      <button id="songStop" class="big">止める</button>
+    </div>
+
+    <details>
+      <summary>別の端末に曲を移す</summary>
+      <div class="row" style="margin:8px 0"><button id="ioOut">書き出す（コピー）</button><button id="ioIn">貼ったものを取り込む</button></div>
+      <textarea id="ioText" rows="4" aria-label="曲のデータ"></textarea>
+      <small id="ioMsg"></small>
+    </details>
   </div>
 </section>
 
@@ -142,8 +243,8 @@ function makeSampler() {
 async function unlock() { await Tone.start(); if (!sampler) await makeSampler(); }
 
 // 合図（ev）を手元で鳴らす。パターンは手元の時計で刻むので、ネットの揺れでリズムが崩れない
-let scheduled = [];
-function stopAll() { scheduled.forEach(id => clearTimeout(id)); scheduled = []; if (sampler) sampler.releaseAll(); }
+let scheduled = [], songTimer = null;
+function stopAll() { scheduled.forEach(id => clearTimeout(id)); scheduled = []; if (songTimer) { clearInterval(songTimer); songTimer = null; } if (sampler) sampler.releaseAll(); }
 function perform(ev, kb, show) {
   if (!ready) return;
   const now = Tone.now() + 0.03;
@@ -168,9 +269,190 @@ function perform(ev, kb, show) {
       scheduled.push(setTimeout(() => flash(kb, m, show), at * 1000));
       t += beat * stepBeats; pos += stepBeats;
     });
+  } else if (ev.type === "song") {
+    stopAll();
+    const song = cleanSong(ev.song);
+    if (song) playSong(song, ev.loop || null, show);
   } else if (ev.type === "stop") {
     stopAll();
   }
+}
+
+// ---- 伴奏：コードを読む ----
+const PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+const SHARP = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const QUALS = [
+  ["", [0,4,7]], ["m", [0,3,7]], ["min", [0,3,7]], ["7", [0,4,7,10]], ["maj7", [0,4,7,11]], ["M7", [0,4,7,11]], ["△7", [0,4,7,11]], ["Δ7", [0,4,7,11]], ["△", [0,4,7,11]],
+  ["m7", [0,3,7,10]], ["min7", [0,3,7,10]], ["mM7", [0,3,7,11]], ["mmaj7", [0,3,7,11]], ["m7b5", [0,3,6,10]], ["m7-5", [0,3,6,10]], ["m7(b5)", [0,3,6,10]], ["m7(-5)", [0,3,6,10]],
+  ["sus4", [0,5,7]], ["sus", [0,5,7]], ["sus2", [0,2,7]], ["7sus4", [0,5,7,10]], ["dim", [0,3,6]], ["dim7", [0,3,6,9]], ["°", [0,3,6]], ["aug", [0,4,8]], ["+", [0,4,8]], ["+5", [0,4,8]],
+  ["6", [0,4,7,9]], ["m6", [0,3,7,9]], ["add9", [0,4,7,14]], ["add2", [0,2,4,7]], ["madd9", [0,3,7,14]], ["9", [0,4,7,10,14]], ["m9", [0,3,7,10,14]], ["maj9", [0,4,7,11,14]], ["M9", [0,4,7,11,14]], ["69", [0,4,7,9,14]],
+].sort((a, b) => b[0].length - a[0].length);
+const TENS = { "9": 14, "b9": 13, "#9": 15, "11": 17, "#11": 18, "13": 21, "b13": 20, "-9": 13, "+9": 15, "+11": 18, "-13": 20 };
+const normText = s => String(s).normalize("NFKC").replace(/♯/g, "#").replace(/♭/g, "b").replace(/on\s*([A-G])/g, "/$1");
+const pcOf = (l, a) => (PC[l] + (a === "#" ? 1 : a === "b" ? -1 : 0) + 12) % 12;
+function parseChord(sym) {
+  const s = normText(sym).trim();
+  if (/^N\.?C\.?$/i.test(s)) return { rest: true, root: 0, iv: [], bass: null };
+  const m = s.match(/^([A-G])([#b]?)(.*)$/); if (!m) return null;
+  let rest = m[3], bass = null;
+  const sl = rest.match(/\/([A-G])([#b]?)$/);
+  if (sl) { bass = pcOf(sl[1], sl[2]); rest = rest.slice(0, rest.length - sl[0].length); }
+  const q = QUALS.find(([k]) => rest.startsWith(k));
+  const iv = q[1].slice(); rest = rest.slice(q[0].length);
+  if (rest) {
+    const p = rest.match(/^\(([^)]*)\)$/); if (!p) return null;
+    for (const t of p[1].split(/[,\s]+/)) { if (!t) continue; if (!(t in TENS)) return null; iv.push(TENS[t]); }
+  }
+  return { rest: false, root: pcOf(m[1], m[2]), iv, bass };
+}
+function transposeSym(sym, k) {
+  if (!k) return sym;
+  const s = normText(sym).trim();
+  const mv = (l, a) => SHARP[(pcOf(l, a) + k + 120) % 12];
+  return s.replace(/^([A-G])([#b]?)/, (_, l, a) => mv(l, a)).replace(/\/([A-G])([#b]?)$/, (_, l, a) => "/" + mv(l, a));
+}
+// 貼ったコード譜 → [{bar, beat, sym}]。1小節に複数あれば均等に割る（半拍に寄せる）
+function parseChart(text, meter) {
+  let s = normText(text).replace(/\[[^\]]*\]|【[^】]*】/g, " ").replace(/[:：]/g, " ");
+  const barTexts = s.includes("|") ? s.replace(/\n/g, " ").split("|") : s.split(/\s+/);
+  const out = [], bad = [];
+  let bar = 0, prev = [];
+  barTexts.forEach(bt => {
+    const toks = bt.trim().split(/\s+/).filter(Boolean);
+    if (!toks.length) return;
+    if (toks.length === 1 && toks[0] === "%") { prev.forEach(c => out.push({ bar, beat: c.beat, sym: c.sym })); bar++; return; }
+    const here = [];
+    toks.forEach((t, i) => {
+      if (/^[-–—.%/]+$/.test(t)) return; // 前のコードのまま
+      if (!parseChord(t)) { bad.push(t); return; }
+      const beat = Math.min(meter - 0.5, Math.round(i * meter / toks.length * 2) / 2);
+      if (!here.some(c => c.beat === beat)) here.push({ bar, beat, sym: normText(t).trim() });
+    });
+    here.forEach(c => out.push(c)); if (here.length) prev = here; bar++;
+  });
+  return { bars: bar, chords: out, bad };
+}
+
+// ---- 伴奏：曲データ ----
+const SEC_NAMES = ["イントロ","Aメロ","Bメロ","サビ","Cメロ","間奏","アウトロ"];
+const rid = () => "s" + Math.random().toString(36).slice(2, 8);
+const clampN = (v, lo, hi, d) => { v = Math.round(+v); return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
+function cleanSong(o) {
+  if (!o || typeof o !== "object") return null;
+  const meter = [2,3,4].includes(+o.meter) ? +o.meter : 4;
+  const bars = clampN(o.bars, 1, 200, 4);
+  const seen = new Set(), chords = [];
+  (Array.isArray(o.chords) ? o.chords : []).forEach(c => {
+    if (!c) return;
+    const bar = Math.floor(+c.bar), beat = Math.round(+c.beat * 2) / 2, sym = String(c.sym || "").slice(0, 16);
+    if (!(bar >= 0 && bar < bars && beat >= 0 && beat < meter) || !parseChord(sym)) return;
+    const k = bar * 8 + beat * 2; if (seen.has(k)) return; seen.add(k); chords.push({ bar, beat, sym });
+  });
+  chords.sort((a, b) => a.bar - b.bar || a.beat - b.beat);
+  const sections = (Array.isArray(o.sections) ? o.sections : []).slice(0, 20).map(x => x && ({ id: String(x.id || rid()).slice(0, 20), name: String(x.name || "").slice(0, 12), start: clampN(x.start, 0, bars - 1, 0), end: clampN(x.end, 0, bars - 1, 0) })).filter(x => x && x.name && x.end >= x.start);
+  const ids = new Set(sections.map(x => x.id));
+  const order = (Array.isArray(o.order) ? o.order : []).map(String).filter(id => ids.has(id)).slice(0, 64);
+  return {
+    name: String(o.name || "曲").slice(0, 40), meter, bars, bpm: clampN(o.bpm, 40, 200, 90), key: clampN(o.key, -12, 12, 0),
+    rh: ["q","e","arp","hold"].includes(o.rh) ? o.rh : "q", lh: ["q","h","w","dot"].includes(o.lh) ? o.lh : "dot",
+    countIn: o.countIn !== false, chords, sections, order,
+  };
+}
+const SAMPLE = {
+  name: "見本（C-Am-F-G）", meter: 4, bpm: 90, key: 0, rh: "q", lh: "dot", countIn: true, bars: 9,
+  chords: [["C",0,0],["Am",1,0],["F",2,0],["G",3,0],["F",4,0],["G",5,0],["Em",6,0],["Am",6,2],["Dm",7,0],["G",7,2],["C",8,0]].map(([sym, bar, beat]) => ({ sym, bar, beat })),
+  sections: [{ id: "sa", name: "Aメロ", start: 0, end: 3 }, { id: "ss", name: "サビ", start: 4, end: 7 }, { id: "so", name: "アウトロ", start: 8, end: 8 }],
+  order: ["sa","sa","ss","ss","so"],
+};
+
+// ---- 伴奏：音の並びを作る（先生・生徒の両方で同じ計算） ----
+// 拍は4分音符=1。barOffs は小節の中で音を出す位置
+function barOffs(kind, meter) {
+  const r = n => Array.from({ length: n }, (_, i) => i);
+  switch (kind) {
+    case "q": return r(meter);
+    case "e": case "arp": return r(meter * 2).map(i => i / 2);
+    case "h": return meter === 2 ? [0] : [0, 2];
+    case "w": return [0];
+    case "dot": return meter === 2 ? [0, 1.5] : [0, 1.5, 2];
+    default: return []; // hold: コードの長さぶん伸ばす
+  }
+}
+function hitsIn(from, to, meter, offs) {
+  const pts = [from];
+  for (let b = Math.floor(from / meter + 1e-9) * meter; b < to; b += meter) offs.forEach(o => { const p = b + o; if (p > from + 1e-9 && p < to - 1e-9) pts.push(p); });
+  pts.sort((a, b) => a - b);
+  return pts.map((p, i) => [p, (i + 1 < pts.length ? pts[i + 1] : to) - p]);
+}
+function renderSong(song, loopId) {
+  const meter = song.meter, K = song.key | 0;
+  const chords = song.chords.map(c => ({ p: c.bar * meter + c.beat, sym: c.sym, ch: parseChord(c.sym) })).filter(c => c.ch).sort((a, b) => a.p - b.p);
+  const byId = id => song.sections.find(x => x.id === id);
+  let segs;
+  if (loopId && byId(loopId)) segs = [byId(loopId)];
+  else { segs = song.order.map(byId).filter(Boolean); if (!segs.length) segs = [{ id: "", name: "", start: 0, end: song.bars - 1 }]; }
+  const notes = [], labels = [], timeline = [];
+  let t = 0;
+  if (song.countIn) { for (let k = 0; k < meter; k++) notes.push([k, k ? 79 : 84, 0.3, k ? 30 : 45]); t = meter; }
+  const loopFrom = t;
+  const isDown = x => Math.abs(x - Math.round(x / meter) * meter) < 1e-6;
+  for (let si = 0; si < segs.length && t < 4000; si++) {
+    const sg = segs[si], g0 = sg.start * meter, g1 = (sg.end + 1) * meter;
+    timeline.push({ t, g0, len: g1 - g0, si, name: sg.name });
+    const inside = chords.filter(c => c.p > g0 + 1e-9 && c.p < g1 - 1e-9);
+    const first = chords.filter(c => c.p <= g0 + 1e-9).pop();
+    const list = first ? [{ ...first, p: g0 }, ...inside] : inside;
+    list.forEach((c, i) => {
+      const from = c.p, to = i + 1 < list.length ? list[i + 1].p : g1, at = x => t + (x - g0);
+      labels.push([at(from), (sg.name ? sg.name + "　" : "") + transposeSym(c.sym, K)]);
+      if (c.ch.rest) return;
+      const { root, iv } = c.ch;
+      // 右手：ド4〜シ4の中に寄せる（転回形で動きが少なくなる）
+      const pcs = [...new Set(iv.map(x => (root + x) % 12))];
+      const voicing = pcs.map(pc => 60 + pc).sort((a, b) => a - b);
+      if (song.rh === "arp") {
+        const r = 55 + (root - 7 + 12) % 12, seq = [r, r + iv[1], r + iv[2], r + 12, r + iv[2], r + iv[1]];
+        hitsIn(from, to, meter, barOffs("arp", meter)).forEach(([p], k) => notes.push([at(p), seq[k % 6] + K, Math.min(to - p, 4), isDown(p) ? 50 : 42]));
+      } else {
+        const hold = song.rh === "hold";
+        hitsIn(from, to, meter, barOffs(song.rh, meter)).forEach(([p, d]) => voicing.forEach(m => notes.push([at(p), m + K, d * (hold ? 0.98 : 0.9), isDown(p) ? 52 : 42])));
+      }
+      // 左手：ド2〜シ2。分数コードは / の後ろの音
+      const bm = 36 + (c.ch.bass != null ? c.ch.bass : root);
+      hitsIn(from, to, meter, barOffs(song.lh, meter)).forEach(([p, d]) => notes.push([at(p), bm + K, d * 0.95, isDown(p) ? 68 : 56]));
+    });
+    t += g1 - g0;
+  }
+  notes.sort((a, b) => a[0] - b[0]);
+  return { notes, labels, timeline, total: t, loopFrom, loopLen: loopId && byId(loopId) ? t - loopFrom : 0 };
+}
+// 手元の時計で少し先まで予約していく（止めるとすぐ止まるように、先読みは0.4秒だけ）
+function playSong(song, loopId, show) {
+  if (!ready) return null;
+  const r = renderSong(song, loopId), spb = 60 / song.bpm, t0 = Tone.now() + 0.15;
+  const N = r.notes.length, L = r.labels.length;
+  const loopIdx = r.notes.findIndex(n => n[0] >= r.loopFrom - 1e-9), loopLab = r.labels.findIndex(n => n[0] >= r.loopFrom - 1e-9);
+  let i = 0, pass = 0, li = 0, lpass = 0;
+  const tick = () => {
+    const now = Tone.now(), horizon = now + 0.4;
+    for (;;) {
+      if (i >= N) { if (r.loopLen && loopIdx >= 0) { pass++; i = loopIdx; } else break; }
+      const n = r.notes[i], at = t0 + (n[0] + pass * r.loopLen) * spb;
+      if (at > horizon) break;
+      if (at > now - 0.05) sampler.triggerAttackRelease(toneName(n[1]), n[2] * spb, at, n[3] / 100);
+      i++;
+    }
+    for (;;) {
+      if (li >= L) { if (r.loopLen && loopLab >= 0) { lpass++; li = loopLab; } else break; }
+      const n = r.labels[li], at = t0 + (n[0] + lpass * r.loopLen) * spb;
+      if (at > horizon) break;
+      if (show) { const txt = n[1]; scheduled.push(setTimeout(() => { show.textContent = txt; }, Math.max(0, (at - now) * 1000))); }
+      li++;
+    }
+    if (!r.loopLen && i >= N && li >= L && songTimer) { clearInterval(songTimer); songTimer = null; }
+  };
+  songTimer = setInterval(tick, 50); tick();
+  return r;
 }
 
 // ---- 鍵盤 ----
@@ -221,7 +503,12 @@ function teacher() {
     peer.on("error", e => { st.textContent = e.type === "unavailable-id" ? "このURLは別の窓で開いています。ほかの窓を閉じてください" : "つながりにくくなっています（自動でつなぎ直します）"; if (e.type !== "unavailable-id" && peer.destroyed) setTimeout(open, 3000); });
   };
   open();
-  const send = ev => { conns.forEach(c => c.open && c.send(ev)); if (document.getElementById("localSound").checked) perform(ev, tKb); };
+  let accHead = null;
+  const send = ev => {
+    if (ev.type !== "note" && ev.type !== "song" && accHead) accHead.stop();
+    conns.forEach(c => c.open && c.send(ev));
+    if (document.getElementById("localSound").checked) perform(ev, tKb);
+  };
 
   // 状態
   let pat = PATTERNS[1], root = 60;
@@ -242,8 +529,340 @@ function teacher() {
   tKb.addEventListener("contextmenu", e => e.preventDefault());
   // 鍵盤の長押しではなく、Shift+クリックでパターンの出だしを決める
   Object.entries(tKb._keys).forEach(([m, k]) => k.addEventListener("pointerdown", e => { if (e.shiftKey) setRoot(+m); }));
-  document.addEventListener("keydown", e => { if (e.key === "ArrowUp") { e.preventDefault(); document.getElementById("up").click(); } if (e.key === "ArrowDown") { e.preventDefault(); document.getElementById("down").click(); } if (e.key === " ") { e.preventDefault(); play(); } });
+  document.addEventListener("keydown", e => { if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && e.target.type !== "range" && e.target.type !== "checkbox") return; if (e.key === "ArrowUp") { e.preventDefault(); document.getElementById("up").click(); } if (e.key === "ArrowDown") { e.preventDefault(); document.getElementById("down").click(); } if (e.key === " ") { e.preventDefault(); play(); } });
   setRoot(60);
+  accHead = setupAcc(send);
+}
+
+// ---- 先生：伴奏 ----
+function setupAcc(send) {
+  const $ = id => document.getElementById(id);
+  const LS_SONGS = "pianoSongs", LS_NOW = "pianoSongNow";
+  const lsGet = k => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { return null; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
+  const savedSongs = () => { const o = lsGet(LS_SONGS); return o && typeof o === "object" && !Array.isArray(o) ? o : {}; };
+  let song = cleanSong(lsGet(LS_NOW)) || cleanSong(SAMPLE);
+  let secName = "Aメロ", loopId = null, editing = null;
+  const keep = () => lsSet(LS_NOW, song);
+  const changed = () => { keep(); drawAll(); };
+
+  // --- 曲の保存・読み込み ---
+  const fillList = (sel) => {
+    const l = $("songList"); l.innerHTML = "";
+    const add = (v, t) => { const o = document.createElement("option"); o.value = v; o.textContent = t; l.appendChild(o); };
+    add("", SAMPLE.name);
+    Object.keys(savedSongs()).sort().forEach(n => add(n, n));
+    l.value = sel != null && [...l.options].some(o => o.value === sel) ? sel : "";
+  };
+  const openSong = s => { const c = cleanSong(s); if (!c) return false; song = c; loopId = null; editing = null; changed(); return true; };
+  $("songSave").onclick = () => {
+    const name = $("songName").value.trim() || "曲"; song.name = name;
+    const all = savedSongs(); all[name] = song;
+    $("songSave").textContent = lsSet(LS_SONGS, all) ? "保存しました" : "保存できませんでした";
+    setTimeout(() => $("songSave").textContent = "保存", 1500);
+    keep(); fillList(name);
+  };
+  $("songOpen").onclick = () => { const v = $("songList").value; openSong(v ? savedSongs()[v] : SAMPLE); };
+  $("songDel").onclick = () => {
+    const v = $("songList").value; if (!v) return;
+    if (!confirm(`「${v}」を消しますか？`)) return;
+    const all = savedSongs(); delete all[v]; lsSet(LS_SONGS, all); fillList("");
+  };
+  $("songName").oninput = () => { song.name = $("songName").value.trim() || "曲"; keep(); };
+  $("ioOut").onclick = () => {
+    const all = savedSongs(); all[song.name] = song;
+    const txt = JSON.stringify({ pianoSongs: Object.values(all) });
+    $("ioText").value = txt;
+    const done = ok => { $("ioMsg").textContent = ok ? `${Object.keys(all).length}曲をコピーしました。もう1台の「取り込む」の上に貼ってください` : "下の文字を全部選んでコピーしてください"; };
+    try { navigator.clipboard.writeText(txt).then(() => done(true), () => { $("ioText").select(); done(false); }); } catch (e) { $("ioText").select(); done(false); }
+  };
+  $("ioIn").onclick = () => {
+    let o; try { o = JSON.parse($("ioText").value); } catch (e) { $("ioMsg").textContent = "読めませんでした。書き出した文字を全部貼ってください"; return; }
+    const list = (o && Array.isArray(o.pianoSongs) ? o.pianoSongs : [o]).map(cleanSong).filter(Boolean);
+    if (!list.length) { $("ioMsg").textContent = "曲が見つかりませんでした"; return; }
+    const all = savedSongs(); list.forEach(s => all[s.name] = s); lsSet(LS_SONGS, all);
+    openSong(list[0]); fillList(list[0].name);
+    $("ioMsg").textContent = `${list.length}曲を取り込みました`;
+  };
+
+  // --- コード譜を貼る ---
+  $("chordRead").onclick = () => {
+    const r = parseChart($("chordText").value, song.meter);
+    if (!r.bars) { $("chordMsg").textContent = "コードが見つかりませんでした"; return; }
+    song.bars = r.bars; song.chords = r.chords; song.sections = []; song.order = []; loopId = null; editing = null;
+    $("chordMsg").textContent = `${r.bars}小節を入れました` + (r.bad.length ? `（読めなかった字: ${r.bad.slice(0, 5).join(" ")}）` : "");
+    changed();
+  };
+
+  // --- グリッド ---
+  const grid = $("grid");
+  let cw = 22, drag = null;
+  const chordAtPos = (bar, beat) => song.chords.find(c => c.bar === bar && c.beat === beat);
+  const beatName = b => `${Math.floor(b) + 1}拍目${b % 1 ? "のウラ" : ""}`;
+  function drawGrid() {
+    grid.innerHTML = "";
+    const m = song.meter, W = grid.clientWidth || 358, per = W >= 640 ? 4 : 2;
+    cw = Math.max(14, Math.min(30, Math.floor((W - (per - 1) * 6 - per * 2 - 2) / (per * m * 2))));
+    for (let i = 0; i < song.bars; i++) {
+      const bar = document.createElement("div"); bar.className = "bar"; bar.dataset.bar = i; bar.style.width = (cw * m * 2 + 2) + "px";
+      const sec = song.sections.filter(x => i >= x.start && i <= x.end);
+      if (sec.length) bar.classList.add("insec");
+      const h = document.createElement("div"); h.className = "bh"; h.textContent = i + 1;
+      sec.filter(x => x.start === i).forEach(x => { const b = document.createElement("b"); b.textContent = x.name; h.appendChild(b); });
+      const body = document.createElement("div"); body.className = "bb";
+      for (let k = 0; k < m * 2; k++) {
+        const c = document.createElement("div"); c.className = "cell" + (k % 2 ? "" : " beat"); c.style.width = cw + "px"; c.dataset.i = k;
+        if (!(k % 2)) c.textContent = k / 2 + 1;
+        c.onclick = () => openEditor(i, k / 2, null);
+        body.appendChild(c);
+      }
+      const here = song.chords.filter(c => c.bar === i).sort((a, b) => a.beat - b.beat);
+      here.forEach((c, j) => {
+        const end = j + 1 < here.length ? here[j + 1].beat : m;
+        const blk = document.createElement("div"); blk.className = "blk"; blk.textContent = c.sym;
+        if (editing && editing.c === c) blk.classList.add("picked");
+        blk.style.left = (c.beat * 2 * cw) + "px"; blk.style.width = ((end - c.beat) * 2 * cw) + "px";
+        if ((end - c.beat) * 2 * cw < 34) blk.style.fontSize = "11px";
+        bindDrag(blk, c); body.appendChild(blk);
+      });
+      bar.appendChild(h); bar.appendChild(body); grid.appendChild(bar);
+    }
+  }
+  // 画面上の点 → どの小節の何拍目か
+  const cellAt = (x, y) => {
+    for (const body of grid.querySelectorAll(".bb")) {
+      const r = body.getBoundingClientRect();
+      if (y >= r.top - 8 && y <= r.bottom + 8 && x >= r.left - cw / 2 && x <= r.right) {
+        const k = Math.max(0, Math.min(song.meter * 2 - 1, Math.floor((x - r.left) / cw)));
+        return { bar: +body.parentNode.dataset.bar, beat: k / 2, el: body.children[k] };
+      }
+    }
+    return null;
+  };
+  function bindDrag(blk, c) {
+    blk.addEventListener("pointerdown", e => {
+      e.preventDefault(); e.stopPropagation();
+      try { blk.setPointerCapture(e.pointerId); } catch (err) {}
+      const r = blk.getBoundingClientRect();
+      drag = { c, blk, id: e.pointerId, x0: e.clientX, y0: e.clientY, gx: e.clientX - r.left, moved: false, tgt: null };
+    });
+    blk.addEventListener("pointermove", e => {
+      if (!drag || drag.blk !== blk || e.pointerId !== drag.id) return;
+      const dx = e.clientX - drag.x0, dy = e.clientY - drag.y0;
+      if (!drag.moved && Math.hypot(dx, dy) < 6) return;
+      drag.moved = true; blk.classList.add("drag"); blk.style.transform = `translate(${dx}px,${dy}px)`;
+      const t = cellAt(e.clientX - drag.gx + cw / 2, e.clientY);
+      if (drag.tgt && drag.tgt.el) drag.tgt.el.classList.remove("tgt");
+      drag.tgt = t; if (t && t.el) t.el.classList.add("tgt");
+    });
+    const end = e => {
+      if (!drag || drag.blk !== blk) return;
+      const d = drag; drag = null;
+      if (!d.moved) { if (e.type === "pointerup") openEditor(c.bar, c.beat, c); return; }
+      const t = d.tgt;
+      if (e.type === "pointerup" && t && !chordAtPos(t.bar, t.beat)) { c.bar = t.bar; c.beat = t.beat; song.chords.sort((a, b) => a.bar - b.bar || a.beat - b.beat); }
+      changed();
+    };
+    blk.addEventListener("pointerup", end); blk.addEventListener("pointercancel", end);
+    blk.addEventListener("click", e => e.stopPropagation());
+  }
+  // --- コードを足す・直す ---
+  function openEditor(bar, beat, c) {
+    editing = { bar, beat, c };
+    $("editor").classList.remove("hide");
+    $("edWhere").textContent = `${bar + 1}小節目・${beatName(beat)}`;
+    $("edSym").value = c ? c.sym : ""; $("edMsg").textContent = "";
+    $("edDel").classList.toggle("hide", !c); $("edOk").textContent = c ? "決める" : "足す";
+    drawGrid(); $("edSym").focus();
+  }
+  const closeEditor = () => { editing = null; $("editor").classList.add("hide"); drawGrid(); };
+  $("edOk").onclick = () => {
+    if (!editing) return;
+    const sym = normText($("edSym").value).trim();
+    if (!parseChord(sym)) { $("edMsg").textContent = "このコードは読めませんでした（例: C, Am7, F#m, Bb, C/E）"; return; }
+    if (editing.c) editing.c.sym = sym; else song.chords.push({ bar: editing.bar, beat: editing.beat, sym });
+    song.chords.sort((a, b) => a.bar - b.bar || a.beat - b.beat);
+    editing = null; $("editor").classList.add("hide"); changed();
+  };
+  $("edSym").addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Enter") $("edOk").click(); });
+  $("edDel").onclick = () => { if (editing && editing.c) song.chords = song.chords.filter(x => x !== editing.c); editing = null; $("editor").classList.add("hide"); changed(); };
+  $("edCancel").onclick = closeEditor;
+  $("barAdd").onclick = () => { if (song.bars < 200) { song.bars++; changed(); } };
+  $("barDel").onclick = () => {
+    if (song.bars <= 1) return;
+    const last = song.bars - 1;
+    if (song.chords.some(c => c.bar === last) && !confirm(`${last + 1}小節目のコードも消えます。よいですか？`)) return;
+    song.bars--; song.chords = song.chords.filter(c => c.bar < song.bars);
+    song.sections = song.sections.filter(x => x.start < song.bars).map(x => ({ ...x, end: Math.min(x.end, song.bars - 1) }));
+    const ids = new Set(song.sections.map(x => x.id)); song.order = song.order.filter(id => ids.has(id));
+    changed();
+  };
+
+  // --- 区切りと順番 ---
+  const secBox = $("secNames");
+  SEC_NAMES.forEach(n => { const b = document.createElement("button"); b.textContent = n; b.onclick = () => { secName = n; drawSecNames(); }; secBox.appendChild(b); });
+  const drawSecNames = () => [...secBox.children].forEach(b => b.classList.toggle("sel", b.textContent === secName));
+  const setSection = (name, start, end) => {
+    const ex = song.sections.find(x => x.name === name);
+    if (ex) { ex.start = start; ex.end = end; return ex; }
+    const s = { id: rid(), name, start, end }; song.sections.push(s); return s;
+  };
+  $("secSet").onclick = () => {
+    let a = clampN($("secFrom").value, 1, song.bars, 1), b = clampN($("secTo").value, 1, song.bars, song.bars);
+    if (b < a) [a, b] = [b, a];
+    setSection(secName, a - 1, b - 1); changed();
+  };
+  const chip = (text, btns, now) => {
+    const c = document.createElement("span"); c.className = "chip" + (now ? " now" : ""); c.append(text);
+    btns.forEach(([t, f, label]) => { const b = document.createElement("button"); b.textContent = t; b.setAttribute("aria-label", label); b.onclick = f; c.appendChild(b); });
+    return c;
+  };
+  const secLabel = x => `${x.name} ${x.start + 1}〜${x.end + 1}`;
+  function drawSections() {
+    const list = $("secList"); list.innerHTML = "";
+    song.sections.slice().sort((a, b) => a.start - b.start).forEach(x => list.appendChild(chip(secLabel(x), [["×", () => {
+      song.sections = song.sections.filter(y => y !== x); song.order = song.order.filter(id => id !== x.id); if (loopId === x.id) loopId = null; changed();
+    }, "区切りを消す"]])));
+    const add = $("orderAdd"); add.innerHTML = "";
+    song.sections.slice().sort((a, b) => a.start - b.start).forEach(x => { const b = document.createElement("button"); b.textContent = "＋" + x.name; b.onclick = () => { if (song.order.length < 64) { song.order.push(x.id); changed(); } }; add.appendChild(b); });
+    if (!song.sections.length) add.innerHTML = "<small>先に区切りに名前をつけてください</small>";
+    drawOrder(-1);
+    const lr = $("loopRow"); lr.innerHTML = '<span class="label" style="margin:0">くり返す</span>';
+    [[null, "しない"], ...song.sections.map(x => [x.id, x.name])].forEach(([id, t]) => {
+      const b = document.createElement("button"); b.textContent = t; b.classList.toggle("sel", loopId === id); b.onclick = () => { loopId = id; drawSections(); }; lr.appendChild(b);
+    });
+    drawSuggest();
+  }
+  function drawOrder(nowIdx) {
+    const ol = $("orderList"); ol.innerHTML = "";
+    song.order.forEach((id, i) => {
+      const x = song.sections.find(y => y.id === id); if (!x) return;
+      const mv = d => () => { const j = i + d; if (j < 0 || j >= song.order.length) return; [song.order[i], song.order[j]] = [song.order[j], song.order[i]]; changed(); };
+      ol.appendChild(chip(`${i + 1}. ${x.name}`, [["◀", mv(-1), "前へ"], ["▶", mv(1), "後ろへ"], ["×", () => { song.order.splice(i, 1); changed(); }, "順番から外す"]], i === nowIdx));
+    });
+    if (song.order.length) { const b = document.createElement("button"); b.textContent = "順番を空にする"; b.onclick = () => { song.order = []; changed(); }; ol.appendChild(b); }
+  }
+  // くり返しているコードの並び（8小節・4小節）を探して、区切りの候補にする
+  function suggest() {
+    const m = song.meter, n = song.bars;
+    const sig = Array.from({ length: n }, (_, i) => {
+      const before = song.chords.filter(c => c.bar < i || (c.bar === i && c.beat === 0)).pop();
+      const inBar = song.chords.filter(c => c.bar === i && c.beat > 0).map(c => c.beat + c.sym);
+      return (before ? before.sym : "-") + "|" + inBar.join(",");
+    });
+    const covered = new Array(n).fill(false), groups = [];
+    const free = (i, L) => covered.slice(i, i + L).every(v => !v);
+    const key = (i, L) => sig.slice(i, i + L).join("#");
+    for (const L of [8, 4]) for (let i = 0; i + L <= n; i++) {
+      if (!free(i, L) || sig.slice(i, i + L).every(s => s === "-|")) continue;
+      const k = key(i, L), occ = [i];
+      for (let j = i + L; j + L <= n; j++) if (free(j, L) && j >= occ[occ.length - 1] + L && key(j, L) === k) occ.push(j);
+      if (occ.length > 1) { groups.push({ start: i, len: L, occ }); occ.forEach(o => { for (let q = o; q < o + L; q++) covered[q] = true; }); }
+    }
+    if (!groups.length) return [];
+    groups.sort((a, b) => a.start - b.start);
+    const used = new Set();
+    const pick = list => { const v = list.find(x => !used.has(x)) || list[list.length - 1]; used.add(v); return v; };
+    groups.forEach((g, i) => { g.name = groups.length > 1 && i === groups.length - 1 ? "サビ" : null; if (g.name) used.add("サビ"); });
+    groups.forEach(g => { if (!g.name) g.name = pick(["Aメロ", "Bメロ", "Cメロ"]); });
+    // くり返しのない所
+    for (let i = 0; i < n;) {
+      if (covered[i]) { i++; continue; }
+      let j = i; while (j < n && !covered[j]) j++;
+      groups.push({ start: i, len: j - i, occ: [i], name: i === 0 ? pick(["イントロ"]) : j === n ? pick(["アウトロ"]) : pick(["Bメロ", "Cメロ", "間奏"]) });
+      i = j;
+    }
+    return groups.sort((a, b) => a.start - b.start);
+  }
+  function drawSuggest() {
+    const box = $("secSuggest"); box.innerHTML = "";
+    const gs = suggest().filter(g => !song.sections.some(x => x.name === g.name && x.start === g.start && x.end === g.start + g.len - 1));
+    gs.forEach(g => {
+      const d = document.createElement("div"); d.className = "cand";
+      const s = document.createElement("span");
+      s.textContent = `ここ${g.name}かも：${g.start + 1}〜${g.start + g.len}小節` + (g.occ.length > 1 ? `（${g.occ.length}回）` : "");
+      const b = document.createElement("button"); b.textContent = "これにする";
+      b.onclick = () => { setSection(g.name, g.start, g.start + g.len - 1); changed(); };
+      d.append(s, b); box.appendChild(d);
+    });
+    if (gs.length > 1) {
+      const b = document.createElement("button"); b.textContent = "候補で順番まで作る"; b.style.marginTop = "8px";
+      b.onclick = () => {
+        const all = suggest(), seq = [];
+        all.forEach(g => { const s = setSection(g.name, g.start, g.start + g.len - 1); g.occ.forEach(o => seq.push([o, s.id])); });
+        song.order = seq.sort((a, b) => a[0] - b[0]).map(x => x[1]); changed();
+      };
+      box.appendChild(b);
+    }
+  }
+
+  // --- 弾き方・テンポ・キー ---
+  const pickRow = (rowId, get, set) => {
+    const row = $(rowId);
+    row.querySelectorAll("button").forEach(b => b.onclick = () => { set(b.dataset.v); changed(); });
+    return () => row.querySelectorAll("button").forEach(b => b.classList.toggle("sel", b.dataset.v === String(get())));
+  };
+  const drawRh = pickRow("rhRow", () => song.rh, v => song.rh = v);
+  const drawLh = pickRow("lhRow", () => song.lh, v => song.lh = v);
+  const drawMeter = pickRow("sMeterRow", () => song.meter, v => {
+    const m = +v; if (m === song.meter) return;
+    const moved = [];
+    song.chords.forEach(c => { if (c.beat >= m) c.beat = m - 0.5; if (!moved.some(o => o.bar === c.bar && o.beat === c.beat)) moved.push(c); });
+    song.chords = moved; song.meter = m;
+  });
+  const bpm = $("sBpm");
+  bpm.oninput = () => { song.bpm = +bpm.value; $("sBpmVal").textContent = bpm.value; keep(); };
+  const drawKey = () => { $("keyVal").textContent = "キー " + (song.key > 0 ? "+" + song.key : song.key < 0 ? "−" + (-song.key) : "±0"); };
+  $("keyUp").onclick = () => { song.key = Math.min(12, song.key + 1); drawKey(); keep(); };
+  $("keyDown").onclick = () => { song.key = Math.max(-12, song.key - 1); drawKey(); keep(); };
+  $("countIn").onchange = () => { song.countIn = $("countIn").checked; keep(); };
+
+  // --- 鳴らす・止める・今どこ ---
+  let head = null;
+  const clearNow = () => { grid.querySelectorAll(".now,.nowbar").forEach(e => e.classList.remove("now", "nowbar")); };
+  const stopHead = () => { if (head) cancelAnimationFrame(head.raf); head = null; clearNow(); drawOrder(-1); };
+  $("songPlay").onclick = async () => {
+    await unlock();
+    const msg = { type: "song", song, loop: loopId };
+    if (JSON.stringify(msg).length > 60000) { $("chordMsg").textContent = "曲が長すぎて送れません。小節を減らしてください"; return; }
+    stopHead();
+    send(msg);
+    const r = renderSong(song, loopId), spb = 60 / song.bpm, start = performance.now() + 150;
+    let lastKey = "", lastSi = -2;
+    const step = () => {
+      let b = (performance.now() - start) / 1000 / spb;
+      if (r.loopLen && b >= r.loopFrom) b = r.loopFrom + (b - r.loopFrom) % r.loopLen;
+      if (!r.loopLen && b >= r.total) { stopHead(); return; }
+      const seg = r.timeline.find(s => b >= s.t && b < s.t + s.len);
+      const k = seg ? Math.floor((seg.g0 + b - seg.t) * 2) : -1;
+      const key = seg ? k + ":" + seg.si : "";
+      if (key !== lastKey) {
+        lastKey = key; clearNow();
+        if (seg) {
+          const bar = grid.children[Math.floor(k / (song.meter * 2))];
+          if (bar) { bar.classList.add("nowbar"); const cell = bar.querySelector(".bb").children[k % (song.meter * 2)]; if (cell) cell.classList.add("now"); }
+        }
+        const si = seg && !loopId && song.order.length ? seg.si : -1;
+        if (si !== lastSi) { lastSi = si; drawOrder(si); }
+      }
+      head.raf = requestAnimationFrame(step);
+    };
+    head = { raf: requestAnimationFrame(step) };
+  };
+  $("songStop").onclick = () => send({ type: "stop" });
+
+  function drawAll() {
+    $("songName").value = song.name;
+    bpm.value = song.bpm; $("sBpmVal").textContent = song.bpm;
+    $("countIn").checked = song.countIn;
+    drawKey(); drawRh(); drawLh(); drawMeter(); drawSecNames();
+    $("secFrom").max = $("secTo").max = song.bars;
+    if (!$("editor").classList.contains("hide") && !editing) $("editor").classList.add("hide");
+    drawGrid(); drawSections();
+  }
+  let rw = 0; addEventListener("resize", () => { if (grid.clientWidth !== rw) { rw = grid.clientWidth; drawGrid(); } });
+  fillList(null); drawAll();
+  return { stop: stopHead };
 }
 
 // ---- 生徒 ----
