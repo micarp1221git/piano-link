@@ -59,7 +59,10 @@ select{flex:1 1 140px;min-width:0}
 .cell.beat{border-left:1px solid #d9cdc6}
 .cell.tgt{background:#fbd9cb}
 .cell.now{background:#fde3d6}
-.blk{position:absolute;top:5px;bottom:5px;background:var(--ink);color:var(--white);font-size:13px;font-weight:700;display:flex;align-items:center;padding:0 4px;overflow:hidden;white-space:nowrap;touch-action:none;cursor:grab;z-index:2;border:1px solid var(--white);letter-spacing:-.02em}
+.blk{position:absolute;top:5px;bottom:5px;background:var(--ink);color:var(--white);font-size:13px;font-weight:700;display:flex;flex-direction:column;justify-content:center;align-items:stretch;padding:0 4px;overflow:hidden;white-space:nowrap;touch-action:none;cursor:grab;z-index:2;border:1px solid var(--white);letter-spacing:-.02em}
+.blk span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.25}
+.blk .bl{font-size:10px;font-weight:400;letter-spacing:0;opacity:.92}
+.bb.ly{height:52px}
 .blk.drag{opacity:.7;z-index:5;cursor:grabbing}
 .blk.picked{background:var(--coral)}
 .editor{margin-top:8px;padding:12px;border:2px solid var(--coral);background:var(--white)}
@@ -69,6 +72,11 @@ select{flex:1 1 140px;min-width:0}
 .cand{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:14px;margin-top:8px}
 details{margin-top:20px}
 summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
+.lynow{margin-top:16px;padding:12px 14px;border:2px solid var(--line);background:var(--white);min-height:112px}
+.lynow.on{border-color:var(--coral)}
+.lyc{font-size:18px;font-weight:700;color:var(--coral);min-height:26px;overflow-wrap:anywhere}
+.lyt{font-size:28px;font-weight:700;line-height:1.35;min-height:38px;overflow-wrap:anywhere}
+.lyn{font-size:14px;color:var(--muted);min-height:20px;overflow-wrap:anywhere}
 .keyv{font-size:18px;font-weight:700;min-width:84px;text-align:center}
 </style>
 </head>
@@ -131,7 +139,8 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
     </div>
 
     <p class="sublabel">コード（ネットのコード譜をそのまま貼れます・小節は | で区切る）</p>
-    <textarea id="chordText" rows="3" placeholder="| C | Am | F G | C |"></textarea>
+    <textarea id="chordText" rows="3" placeholder="| C ここで ひといき | Am | F さびの G はじまり | C |"></textarea>
+    <small>コードの後ろに歌詞を書けます。A や Am のように、コードと同じ形の言葉はコードとして読みます。</small>
     <div class="row" style="margin-top:8px"><button id="chordRead">グリッドに入れる</button><small id="chordMsg"></small></div>
 
     <p class="sublabel">グリッド（コードは指で動かせます・空いたマスを押すと足せます）</p>
@@ -140,6 +149,9 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
       <p class="label" id="edWhere" style="margin-bottom:8px"></p>
       <div class="row">
         <input class="txt" id="edSym" aria-label="コード" placeholder="例: Am7" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <input class="txt" id="edLyric" aria-label="歌詞" placeholder="歌詞" maxlength="60" autocomplete="off">
+      </div>
+      <div class="row" style="margin-top:8px">
         <button id="edOk" class="main">決める</button><button id="edDel">消す</button><button id="edCancel">やめる</button>
       </div>
       <small id="edMsg"></small>
@@ -177,6 +189,11 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
       <label><input type="checkbox" id="countIn" checked> 最初に1小節カウント</label>
     </div>
     <div class="row" id="loopRow" style="margin-top:8px"></div>
+    <div class="lynow" id="lyBox" aria-live="off">
+      <div class="lyc" id="lyChord"></div>
+      <div class="lyt" id="lyText"></div>
+      <div class="lyn" id="lyNext">鳴らすと、いまのコードと歌詞がここに出ます</div>
+    </div>
     <div class="row" style="margin-top:16px">
       <button id="songPlay" class="big main">伴奏を鳴らす</button>
       <button id="songStop" class="big">止める</button>
@@ -202,6 +219,8 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
   </div>
   <div class="box">
     <div class="note" id="nowNote"></div>
+    <div class="lyt" id="sLyric"></div>
+    <div class="lyn" id="sNext" style="margin-bottom:12px"></div>
     <div class="row"><span class="label" style="margin:0">音量</span><input type="range" id="vol" min="-30" max="6" value="0"></div>
   </div>
   <div class="box">
@@ -272,6 +291,7 @@ function perform(ev, kb, show) {
   } else if (ev.type === "song") {
     stopAll();
     const song = cleanSong(ev.song);
+    if (show) { show.textContent = ""; showLyric(show, "", null); }
     if (song) playSong(song, ev.loop || null, show);
   } else if (ev.type === "stop") {
     stopAll();
@@ -288,7 +308,8 @@ const QUALS = [
   ["6", [0,4,7,9]], ["m6", [0,3,7,9]], ["add9", [0,4,7,14]], ["add2", [0,2,4,7]], ["madd9", [0,3,7,14]], ["9", [0,4,7,10,14]], ["m9", [0,3,7,10,14]], ["maj9", [0,4,7,11,14]], ["M9", [0,4,7,11,14]], ["69", [0,4,7,9,14]],
 ].sort((a, b) => b[0].length - a[0].length);
 const TENS = { "9": 14, "b9": 13, "#9": 15, "11": 17, "#11": 18, "13": 21, "b13": 20, "-9": 13, "+9": 15, "+11": 18, "-13": 20 };
-const normText = s => String(s).normalize("NFKC").replace(/♯/g, "#").replace(/♭/g, "b").replace(/on\s*([A-G])/g, "/$1");
+const normBase = s => String(s).normalize("NFKC").replace(/♯/g, "#").replace(/♭/g, "b");
+const normText = s => normBase(s).replace(/on\s*([A-G])/g, "/$1");
 const pcOf = (l, a) => (PC[l] + (a === "#" ? 1 : a === "b" ? -1 : 0) + 12) % 12;
 function parseChord(sym) {
   const s = normText(sym).trim();
@@ -311,22 +332,58 @@ function transposeSym(sym, k) {
   const mv = (l, a) => SHARP[(pcOf(l, a) + k + 120) % 12];
   return s.replace(/^([A-G])([#b]?)/, (_, l, a) => mv(l, a)).replace(/\/([A-G])([#b]?)$/, (_, l, a) => "/" + mv(l, a));
 }
-// 貼ったコード譜 → [{bar, beat, sym}]。1小節に複数あれば均等に割る（半拍に寄せる）
+// 貼ったコード譜 → [{bar, beat, sym, lyric?}]。1小節に複数あれば均等に割る（半拍に寄せる）
+// コードの後ろの言葉は、そのコードの歌詞（次のコードか | まで）。コードの形にぴったり合う言葉（A・Am など）はコードとして読む
+const HOLD_TOK = /^[-–—.%/]+$/;
+const looksChord = t => /^[A-G][#b]?[0-9A-Za-z()#+\-/△°Δ,]*$/.test(t) && /[0-9()/#]/.test(t.slice(1));
+const SEC_TOK = /^(イントロ|[A-DＡ-Ｄ]メロ|サビ|大サビ|落ちサビ|間奏|アウトロ|エンディング|Intro|Outro)\d*$/i; // 区切りの見出しは歌詞にしない
+function splitTok(t) {
+  if (SEC_TOK.test(t)) return [];
+  if (HOLD_TOK.test(t)) return [{ k: "hold", t }];
+  if (parseChord(t)) return [{ k: "chord", t }];
+  const m = t.match(/^([\x21-\x7e]+)([^\x00-\x7f].*)$/); // 「Abきみと」のようにくっついている
+  if (m && parseChord(m[1])) return [{ k: "chord", t: m[1] }, { k: "ly", t: m[2] }];
+  if (looksChord(t)) return [{ k: "bad", t }];
+  return [{ k: "ly", t }];
+}
+// 日本語はすき間なしでつなぐ。英単語どうしだけスペースを残す
+const joinLy = (a, b) => !a ? b : !b ? a : a + (/[A-Za-z0-9'’!?.,]$/.test(a) && /^[A-Za-z0-9'‘(]/.test(b) ? " " : "") + b;
 function parseChart(text, meter) {
-  let s = normText(text).replace(/\[[^\]]*\]|【[^】]*】/g, " ").replace(/[:：]/g, " ");
-  const barTexts = s.includes("|") ? s.replace(/\n/g, " ").split("|") : s.split(/\s+/);
+  let s = normBase(text).replace(/\[[^\]]*\]|【[^】]*】/g, " ").replace(/[:：]/g, " ")
+    .replace(/(^|\s|\|)([A-G][#b]?[^\s|]*)\s+on\s+([A-G][#b]?)(?=[\s|]|$)/g, "$1$2on$3"); // 「C on E」→「ConE」
+  let barTexts;
+  if (s.includes("|")) barTexts = s.replace(/\n/g, " ").split("|");
+  else { // | が無いときは、コード1つ＝1小節。歌詞はそのコードの小節に入れる
+    barTexts = []; let lead = "";
+    s.split(/\s+/).filter(Boolean).forEach(t => {
+      if ((splitTok(t)[0] || { k: "ly" }).k !== "ly") barTexts.push((lead ? lead + " " : "") + t), lead = "";
+      else if (barTexts.length) barTexts[barTexts.length - 1] += " " + t;
+      else lead += (lead ? " " : "") + t;
+    });
+  }
   const out = [], bad = [];
-  let bar = 0, prev = [];
+  let bar = 0, prev = [], last = null, pend = "";
+  const addLy = t => { if (last) last.lyric = joinLy(last.lyric || "", t); else pend = joinLy(pend, t); };
   barTexts.forEach(bt => {
-    const toks = bt.trim().split(/\s+/).filter(Boolean);
+    const toks = [];
+    bt.trim().split(/\s+/).filter(Boolean).forEach(t => toks.push(...splitTok(t)));
     if (!toks.length) return;
-    if (toks.length === 1 && toks[0] === "%") { prev.forEach(c => out.push({ bar, beat: c.beat, sym: c.sym })); bar++; return; }
-    const here = [];
-    toks.forEach((t, i) => {
-      if (/^[-–—.%/]+$/.test(t)) return; // 前のコードのまま
-      if (!parseChord(t)) { bad.push(t); return; }
-      const beat = Math.min(meter - 0.5, Math.round(i * meter / toks.length * 2) / 2);
-      if (!here.some(c => c.beat === beat)) here.push({ bar, beat, sym: normText(t).trim() });
+    const slots = toks.filter(x => x.k !== "ly");
+    if (slots.length === 1 && slots[0].t === "%") { // 前の小節と同じ
+      const copy = prev.map(c => ({ bar, beat: c.beat, sym: c.sym }));
+      toks.forEach(x => { if (x.k !== "ly") { if (copy.length) last = copy[0]; } else addLy(x.t); });
+      copy.forEach(c => out.push(c)); if (copy.length) last = copy[copy.length - 1]; bar++; return;
+    }
+    const here = []; let si = 0;
+    toks.forEach(x => {
+      if (x.k === "ly") { addLy(x.t); return; }
+      const i = si++;
+      if (x.k === "hold") return; // 前のコードのまま
+      if (x.k === "bad") { bad.push(x.t); return; }
+      const beat = Math.min(meter - 0.5, Math.round(i * meter / slots.length * 2) / 2);
+      let c = here.find(y => y.beat === beat);
+      if (!c) { c = { bar, beat, sym: normText(x.t).trim() }; if (pend) { c.lyric = pend; pend = ""; } here.push(c); }
+      last = c;
     });
     here.forEach(c => out.push(c)); if (here.length) prev = here; bar++;
   });
@@ -346,7 +403,9 @@ function cleanSong(o) {
     if (!c) return;
     const bar = Math.floor(+c.bar), beat = Math.round(+c.beat * 2) / 2, sym = String(c.sym || "").slice(0, 16);
     if (!(bar >= 0 && bar < bars && beat >= 0 && beat < meter) || !parseChord(sym)) return;
-    const k = bar * 8 + beat * 2; if (seen.has(k)) return; seen.add(k); chords.push({ bar, beat, sym });
+    const k = bar * 8 + beat * 2; if (seen.has(k)) return; seen.add(k);
+    const ly = String(c.lyric == null ? "" : c.lyric).replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, 60); // 歌詞は無くてもよい（前の版の曲も読める）
+    chords.push(ly ? { bar, beat, sym, lyric: ly } : { bar, beat, sym });
   });
   chords.sort((a, b) => a.bar - b.bar || a.beat - b.beat);
   const sections = (Array.isArray(o.sections) ? o.sections : []).slice(0, 20).map(x => x && ({ id: String(x.id || rid()).slice(0, 20), name: String(x.name || "").slice(0, 12), start: clampN(x.start, 0, bars - 1, 0), end: clampN(x.end, 0, bars - 1, 0) })).filter(x => x && x.name && x.end >= x.start);
@@ -360,7 +419,8 @@ function cleanSong(o) {
 }
 const SAMPLE = {
   name: "見本（C-Am-F-G）", meter: 4, bpm: 90, key: 0, rh: "q", lh: "dot", countIn: true, bars: 9,
-  chords: [["C",0,0],["Am",1,0],["F",2,0],["G",3,0],["F",4,0],["G",5,0],["Em",6,0],["Am",6,2],["Dm",7,0],["G",7,2],["C",8,0]].map(([sym, bar, beat]) => ({ sym, bar, beat })),
+  // 歌詞はつくりものの言葉（実際の曲の歌詞は入れない）
+  chords: [["C",0,0,"ここで ひといき"],["Am",1,0,"ゆっくり すって"],["F",2,0],["G",3,0,"はいて"],["F",4,0,"さびの"],["G",5,0,"はじまり"],["Em",6,0,"こえを"],["Am",6,2,"のばして"],["Dm",7,0,"もう"],["G",7,2,"すこし"],["C",8,0,"おしまい"]].map(([sym, bar, beat, lyric]) => lyric ? { sym, bar, beat, lyric } : { sym, bar, beat }),
   sections: [{ id: "sa", name: "Aメロ", start: 0, end: 3 }, { id: "ss", name: "サビ", start: 4, end: 7 }, { id: "so", name: "アウトロ", start: 8, end: 8 }],
   order: ["sa","sa","ss","ss","so"],
 };
@@ -386,7 +446,7 @@ function hitsIn(from, to, meter, offs) {
 }
 function renderSong(song, loopId) {
   const meter = song.meter, K = song.key | 0;
-  const chords = song.chords.map(c => ({ p: c.bar * meter + c.beat, sym: c.sym, ch: parseChord(c.sym) })).filter(c => c.ch).sort((a, b) => a.p - b.p);
+  const chords = song.chords.map(c => ({ p: c.bar * meter + c.beat, sym: c.sym, ly: c.lyric || "", ch: parseChord(c.sym) })).filter(c => c.ch).sort((a, b) => a.p - b.p);
   const byId = id => song.sections.find(x => x.id === id);
   let segs;
   if (loopId && byId(loopId)) segs = [byId(loopId)];
@@ -401,10 +461,10 @@ function renderSong(song, loopId) {
     timeline.push({ t, g0, len: g1 - g0, si, name: sg.name });
     const inside = chords.filter(c => c.p > g0 + 1e-9 && c.p < g1 - 1e-9);
     const first = chords.filter(c => c.p <= g0 + 1e-9).pop();
-    const list = first ? [{ ...first, p: g0 }, ...inside] : inside;
+    const list = first ? [{ ...first, p: g0, ly: first.p < g0 - 1e-9 ? "" : first.ly }, ...inside] : inside; // 区切りの途中から続くコードの歌詞は、もう歌い終わっている
     list.forEach((c, i) => {
       const from = c.p, to = i + 1 < list.length ? list[i + 1].p : g1, at = x => t + (x - g0);
-      labels.push([at(from), (sg.name ? sg.name + "　" : "") + transposeSym(c.sym, K)]);
+      labels.push([at(from), (sg.name ? sg.name + "　" : "") + transposeSym(c.sym, K), c.ly, transposeSym(c.sym, K)]); // [拍, 見出し, 歌詞, コード]
       if (c.ch.rest) return;
       const { root, iv } = c.ch;
       // 右手：ド4〜シ4の中に寄せる（転回形で動きが少なくなる）
@@ -426,6 +486,11 @@ function renderSong(song, loopId) {
   notes.sort((a, b) => a[0] - b[0]);
   return { notes, labels, timeline, total: t, loopFrom, loopLen: loopId && byId(loopId) ? t - loopFrom : 0 };
 }
+const nextText = nx => nx ? "つぎ　" + nx[3] + (nx[2] ? "　" + nx[2] : "") : "";
+function showLyric(show, ly, nx) {
+  if (show._lyric) show._lyric.textContent = ly || "";
+  if (show._next) show._next.textContent = nextText(nx);
+}
 // 手元の時計で少し先まで予約していく（止めるとすぐ止まるように、先読みは0.4秒だけ）
 function playSong(song, loopId, show) {
   if (!ready) return null;
@@ -446,7 +511,10 @@ function playSong(song, loopId, show) {
       if (li >= L) { if (r.loopLen && loopLab >= 0) { lpass++; li = loopLab; } else break; }
       const n = r.labels[li], at = t0 + (n[0] + lpass * r.loopLen) * spb;
       if (at > horizon) break;
-      if (show) { const txt = n[1]; scheduled.push(setTimeout(() => { show.textContent = txt; }, Math.max(0, (at - now) * 1000))); }
+      if (show) {
+        const txt = n[1], ly = n[2], nx = li + 1 < L ? r.labels[li + 1] : r.loopLen && loopLab >= 0 ? r.labels[loopLab] : null;
+        scheduled.push(setTimeout(() => { show.textContent = txt; showLyric(show, ly, nx); }, Math.max(0, (at - now) * 1000)));
+      }
       li++;
     }
     if (!r.loopLen && i >= N && li >= L && songTimer) { clearInterval(songTimer); songTimer = null; }
@@ -478,7 +546,7 @@ function buildKb(el, onPress) {
 }
 function flash(kb, m, show) {
   const k = kb && kb._keys && kb._keys[m]; if (k) { k.classList.add("hit"); setTimeout(() => k.classList.remove("hit"), 350); }
-  if (show) show.textContent = nameOf(m);
+  if (show) { show.textContent = nameOf(m); showLyric(show, "", null); }
 }
 function markRoot(kb, m) { Object.values(kb._keys).forEach(k => k.classList.remove("rootk")); if (kb._keys[m]) kb._keys[m].classList.add("rootk"); }
 
@@ -588,9 +656,10 @@ function setupAcc(send) {
   // --- コード譜を貼る ---
   $("chordRead").onclick = () => {
     const r = parseChart($("chordText").value, song.meter);
-    if (!r.bars) { $("chordMsg").textContent = "コードが見つかりませんでした"; return; }
+    if (!r.bars || !r.chords.length) { $("chordMsg").textContent = "コードが見つかりませんでした"; return; }
     song.bars = r.bars; song.chords = r.chords; song.sections = []; song.order = []; loopId = null; editing = null;
-    $("chordMsg").textContent = `${r.bars}小節を入れました` + (r.bad.length ? `（読めなかった字: ${r.bad.slice(0, 5).join(" ")}）` : "");
+    const nly = r.chords.filter(c => c.lyric).length;
+    $("chordMsg").textContent = `${r.bars}小節を入れました` + (nly ? `・歌詞${nly}か所` : "") + (r.bad.length ? `（読めなかった字: ${r.bad.slice(0, 5).join(" ")}）` : "");
     changed();
   };
 
@@ -601,7 +670,7 @@ function setupAcc(send) {
   const beatName = b => `${Math.floor(b) + 1}拍目${b % 1 ? "のウラ" : ""}`;
   function drawGrid() {
     grid.innerHTML = "";
-    const m = song.meter, W = grid.clientWidth || 358, per = W >= 640 ? 4 : 2;
+    const m = song.meter, W = grid.clientWidth || 358, per = W >= 640 ? 4 : 2, anyLy = song.chords.some(c => c.lyric);
     cw = Math.max(14, Math.min(30, Math.floor((W - (per - 1) * 6 - per * 2 - 2) / (per * m * 2))));
     for (let i = 0; i < song.bars; i++) {
       const bar = document.createElement("div"); bar.className = "bar"; bar.dataset.bar = i; bar.style.width = (cw * m * 2 + 2) + "px";
@@ -609,7 +678,7 @@ function setupAcc(send) {
       if (sec.length) bar.classList.add("insec");
       const h = document.createElement("div"); h.className = "bh"; h.textContent = i + 1;
       sec.filter(x => x.start === i).forEach(x => { const b = document.createElement("b"); b.textContent = x.name; h.appendChild(b); });
-      const body = document.createElement("div"); body.className = "bb";
+      const body = document.createElement("div"); body.className = "bb" + (anyLy ? " ly" : "");
       for (let k = 0; k < m * 2; k++) {
         const c = document.createElement("div"); c.className = "cell" + (k % 2 ? "" : " beat"); c.style.width = cw + "px"; c.dataset.i = k;
         if (!(k % 2)) c.textContent = k / 2 + 1;
@@ -619,7 +688,9 @@ function setupAcc(send) {
       const here = song.chords.filter(c => c.bar === i).sort((a, b) => a.beat - b.beat);
       here.forEach((c, j) => {
         const end = j + 1 < here.length ? here[j + 1].beat : m;
-        const blk = document.createElement("div"); blk.className = "blk"; blk.textContent = c.sym;
+        const blk = document.createElement("div"); blk.className = "blk";
+        const sy = document.createElement("span"); sy.className = "bs"; sy.textContent = c.sym; blk.appendChild(sy);
+        if (c.lyric) { const ly = document.createElement("span"); ly.className = "bl"; ly.textContent = c.lyric; blk.appendChild(ly); blk.title = c.sym + "　" + c.lyric; }
         if (editing && editing.c === c) blk.classList.add("picked");
         blk.style.left = (c.beat * 2 * cw) + "px"; blk.style.width = ((end - c.beat) * 2 * cw) + "px";
         if ((end - c.beat) * 2 * cw < 34) blk.style.fontSize = "11px";
@@ -671,7 +742,7 @@ function setupAcc(send) {
     editing = { bar, beat, c };
     $("editor").classList.remove("hide");
     $("edWhere").textContent = `${bar + 1}小節目・${beatName(beat)}`;
-    $("edSym").value = c ? c.sym : ""; $("edMsg").textContent = "";
+    $("edSym").value = c ? c.sym : ""; $("edLyric").value = c && c.lyric ? c.lyric : ""; $("edMsg").textContent = "";
     $("edDel").classList.toggle("hide", !c); $("edOk").textContent = c ? "決める" : "足す";
     drawGrid(); $("edSym").focus();
   }
@@ -680,11 +751,14 @@ function setupAcc(send) {
     if (!editing) return;
     const sym = normText($("edSym").value).trim();
     if (!parseChord(sym)) { $("edMsg").textContent = "このコードは読めませんでした（例: C, Am7, F#m, Bb, C/E）"; return; }
-    if (editing.c) editing.c.sym = sym; else song.chords.push({ bar: editing.bar, beat: editing.beat, sym });
+    const lyric = $("edLyric").value.replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, 60);
+    const c = editing.c || { bar: editing.bar, beat: editing.beat };
+    c.sym = sym; if (lyric) c.lyric = lyric; else delete c.lyric;
+    if (!editing.c) song.chords.push(c);
     song.chords.sort((a, b) => a.bar - b.bar || a.beat - b.beat);
     editing = null; $("editor").classList.add("hide"); changed();
   };
-  $("edSym").addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Enter") $("edOk").click(); });
+  ["edSym", "edLyric"].forEach(id => $(id).addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Enter" && !e.isComposing && e.keyCode !== 229) $("edOk").click(); }));
   $("edDel").onclick = () => { if (editing && editing.c) song.chords = song.chords.filter(x => x !== editing.c); editing = null; $("editor").classList.add("hide"); changed(); };
   $("edCancel").onclick = closeEditor;
   $("barAdd").onclick = () => { if (song.bars < 200) { song.bars++; changed(); } };
@@ -820,7 +894,8 @@ function setupAcc(send) {
   // --- 鳴らす・止める・今どこ ---
   let head = null;
   const clearNow = () => { grid.querySelectorAll(".now,.nowbar").forEach(e => e.classList.remove("now", "nowbar")); };
-  const stopHead = () => { if (head) cancelAnimationFrame(head.raf); head = null; clearNow(); drawOrder(-1); };
+  const lyIdle = () => { $("lyBox").classList.remove("on"); $("lyChord").textContent = ""; $("lyText").textContent = ""; $("lyNext").textContent = "鳴らすと、いまのコードと歌詞がここに出ます"; };
+  const stopHead = () => { if (head) cancelAnimationFrame(head.raf); head = null; clearNow(); drawOrder(-1); lyIdle(); };
   $("songPlay").onclick = async () => {
     await unlock();
     const msg = { type: "song", song, loop: loopId };
@@ -828,7 +903,9 @@ function setupAcc(send) {
     stopHead();
     send(msg);
     const r = renderSong(song, loopId), spb = 60 / song.bpm, start = performance.now() + 150;
-    let lastKey = "", lastSi = -2;
+    let lastKey = "", lastSi = -2, lastLi = -2;
+    const L = r.labels;
+    $("lyBox").classList.add("on");
     const step = () => {
       let b = (performance.now() - start) / 1000 / spb;
       if (r.loopLen && b >= r.loopFrom) b = r.loopFrom + (b - r.loopFrom) % r.loopLen;
@@ -836,6 +913,14 @@ function setupAcc(send) {
       const seg = r.timeline.find(s => b >= s.t && b < s.t + s.len);
       const k = seg ? Math.floor((seg.g0 + b - seg.t) * 2) : -1;
       const key = seg ? k + ":" + seg.si : "";
+      let li = -1; while (li + 1 < L.length && L[li + 1][0] <= b + 1e-9) li++;
+      if (li !== lastLi) {
+        lastLi = li;
+        const cur = L[li], nx = li + 1 < L.length ? L[li + 1] : r.loopLen ? L[0] : null;
+        $("lyChord").textContent = cur ? cur[1] : "カウント";
+        $("lyText").textContent = cur ? cur[2] : "";
+        $("lyNext").textContent = nextText(nx);
+      }
       if (key !== lastKey) {
         lastKey = key; clearNow();
         if (seg) {
@@ -871,6 +956,7 @@ function student(code) {
   const dot = document.getElementById("sDot"), st = document.getElementById("sStatus");
   const sKb = document.getElementById("sKb"); buildKb(sKb, null);
   const show = document.getElementById("nowNote");
+  show._lyric = document.getElementById("sLyric"); show._next = document.getElementById("sNext");
   document.getElementById("vol").oninput = e => { Tone.Destination.volume.value = +e.target.value; };
   document.getElementById("start").onclick = async () => {
     const b = document.getElementById("start"); b.disabled = true; b.textContent = "準備中…";
