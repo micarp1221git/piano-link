@@ -461,6 +461,26 @@ const SAMPLE = {
   order: ["sa","sa","ss","ss","so"],
 };
 
+// ---- 伴奏：入れておく曲（コード譜から作る・歌詞は入れない） ----
+// 2026-11-08 みかさん「MISIAのつつみこむように（原曲キー）で作ってみて」。コードはみかさんが貼った譜面（ピアノコード表示）から。
+// 小節の区切りは譜面の並びからの目安。ずれていたらグリッドで動かす
+const PRESET_TEXTS = [
+  { name: "つつみ込むように…（原曲キー）", meter: 4, bpm: 80, key: 0, rh: "arp", lh: "w", text: "[イントロ] | F E7 | Am Gm | C | F E7 | Am Gm | C | F E7 | Am Gm | C Dm | Em Fm | G | C |\n[Aメロ] | Cmaj7 D7 | Abmaj7 Cmaj7 | - D7 | - | Abmaj7 | Cmaj7 Fmaj7 | - Fm7 | - |\n[Bメロ] | Em7 Am7 | Fmaj7 Em7 | Dm7 Em7 | Fmaj7 G7 | Dsus4/E Em7 |\n[サビ] | Fmaj7 E7sus4 E7 | Am7 Em7 | C | Fmaj7 E7sus4 E7 | Am7 Em7 | C | Fmaj7 E7sus4 E7 | Am7 Em7 | C Dm7 | Em7 Fm7 G7 | C Cmaj7 |\n[Aメロ] | - D7 | Abmaj7 Cmaj7 | - D7 | - | Abmaj7 | Cmaj7 Fmaj7 | - Fm7 | - |\n[Bメロ] | Em7 Am7 | Fmaj7 Em7 | Dm7 Em7 | Fmaj7 G7 | Dsus4/E Em7 |\n[サビ] | Fmaj7 E7sus4 E7 | Am7 Em7 | C | Fmaj7 E7sus4 E7 | Am7 | Em7 C | Fmaj7 E7sus4 E7 | Am7 Em7 | C Dm7 | Em7 Fm7 G7 | Dm/Bb | Dm Fm7 | F/G |\n[間奏] | Fmaj7 E7sus4 E7 | Am7 Em7 | C | Fmaj7 E7sus4 E7 | Am7 Em7 | C | Fmaj7 E7sus4 E7 | Am7 Em7 | C | Dm7 Em7 | Fm7 G7 | Fmaj7 |\n[Cメロ] | Fm7 Em7 | Aaug A | Dm7 Em7 | Dm7 Em7 | Fmaj7 Bb7 | G7 Dsus4/E | E7 F7 |\n[大サビ] | Gbmaj7 F7sus4 F7 | Bbm7 Fm7 | Db | Gbmaj7 F7sus4 F7 | Bbm7 Fm7 | Db | Gbmaj7 F7sus4 F7 | Bbm7 Fm7 | Db Ebm7 | Fm7 Gbm7 Ab | Fm7 | Gbmaj7 |\n[アウトロ] | F7sus4 F7 | Bbm7 Fm7 | Db | Gbmaj7 F7sus4 F7 | Bbm7 Fm7 | Db | Gbmaj7 F7sus4 F7 | Bbm7 Fm7 | Db Ebm7 | Fm7 | Gbm7 Ab7 | Fm7 | Gbmaj7 F7sus4 F7 | Bbm7 Fm7 | Db | Gbmaj7 F7sus4 F7 | Bbm7 Fm7 | Db | Gbmaj7 F7sus4 F7 | Bbm7 Fm7 | Db Ebm7 | Fm7 | Gbm7 Ab7 | Fm7 | Gbmaj7 F7sus4 F7 | Bbm7 Fm7 | Db | Gbmaj7 F7sus4 F7 | Bbm7 Fm7 | Db | Gbmaj7 F7sus4 F7 | Bbm7 Fm7 | Db |" },
+];
+function presetFromText(p) {
+  const parts = p.text.split(/\[([^\]]+)\]/);
+  let bar = 0; const chords = [], sections = [], order = [];
+  for (let i = 1; i < parts.length; i += 2) {
+    const r = parseChart(parts[i + 1] || "", p.meter);
+    if (!r.bars) continue;
+    r.chords.forEach(c => chords.push({ ...c, bar: c.bar + bar }));
+    const id = "p" + i; sections.push({ id, name: parts[i].trim().slice(0, 12), start: bar, end: bar + r.bars - 1 }); order.push(id);
+    bar += r.bars;
+  }
+  return { name: p.name, meter: p.meter, bpm: p.bpm, key: p.key, rh: p.rh, lh: p.lh, countIn: true, bars: bar, chords, sections, order };
+}
+const PRESETS = PRESET_TEXTS.map(presetFromText);
+
 // ---- 伴奏：音の並びを作る（先生・生徒の両方で同じ計算） ----
 // 拍は4分音符=1。barOffs は小節の中で音を出す位置
 function barOffs(kind, meter) {
@@ -679,6 +699,7 @@ function setupAcc(send) {
     const l = $("songList"); l.innerHTML = "";
     const add = (v, t) => { const o = document.createElement("option"); o.value = v; o.textContent = t; l.appendChild(o); };
     add("", SAMPLE.name);
+    PRESETS.forEach((p, i) => add("preset:" + i, "入れてある曲: " + p.name));
     Object.keys(savedSongs()).sort().forEach(n => add(n, n));
     l.value = sel != null && [...l.options].some(o => o.value === sel) ? sel : "";
   };
@@ -690,9 +711,9 @@ function setupAcc(send) {
     setTimeout(() => $("songSave").textContent = "保存", 1500);
     keep(); fillList(name);
   };
-  $("songOpen").onclick = () => { const v = $("songList").value; openSong(v ? savedSongs()[v] : SAMPLE); };
+  $("songOpen").onclick = () => { const v = $("songList").value; openSong(v.startsWith("preset:") ? PRESETS[+v.slice(7)] : v ? savedSongs()[v] : SAMPLE); };
   $("songDel").onclick = () => {
-    const v = $("songList").value; if (!v) return;
+    const v = $("songList").value; if (!v || v.startsWith("preset:")) return;
     if (!confirm(`「${v}」を消しますか？`)) return;
     const all = savedSongs(); delete all[v]; lsSet(LS_SONGS, all); fillList("");
   };
