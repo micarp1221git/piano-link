@@ -94,6 +94,7 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
 #edIns{width:100%}
 .insub{display:block;font-size:13px;font-weight:400}
 </style>
+<link rel="stylesheet" href="lesson.css">
 </head>
 <body>
 <main>
@@ -205,11 +206,11 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
     <div class="row" id="orderAdd"></div>
     <div class="row" id="orderList" style="margin-top:8px"></div>
 
-    <p class="sublabel">弾き方</p>
-    <div class="row" id="rhRow"><span class="label" style="margin:0">右手</span>
+    <div id="accompanimentSettings"><p class="sublabel">弾き方</p>
+    <div class="row" id="rhRow"><span class="label" style="margin:0">右手</span><button data-v="score">譜面どおり</button><button data-v="off">なし</button>
       <button data-v="q">4分で刻む</button><button data-v="e">8分で刻む</button><button data-v="arp">アルペジオ</button><button data-v="hold">伸ばす</button>
     </div>
-    <div class="row" id="lhRow" style="margin-top:8px"><span class="label" style="margin:0">左手</span>
+    <div class="row" id="lhRow" style="margin-top:8px"><span class="label" style="margin:0">左手</span><button data-v="groove">この曲のリズム</button><button data-v="score">譜面どおり</button><button data-v="e">8分</button><button data-v="arp">アルペジオ</button><button data-v="off">なし</button>
       <button data-v="q">4分</button><button data-v="h">2分</button><button data-v="w">全音符</button><button data-v="dot">ターーン・タ・ターーン</button>
     </div>
     <div class="row" id="sMeterRow" style="margin-top:8px"><span class="label" style="margin:0">拍子</span>
@@ -222,9 +223,9 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
       <button id="keyDown">▼</button><span class="keyv" id="keyVal">キー ±0</span><button id="keyUp">▲</button>
       <label><input type="checkbox" id="countIn" checked> 最初に1小節カウント</label>
     </div>
-    <div class="row" id="loopRow" style="margin-top:8px"></div>
+    <div class="row hide" id="loopRow" style="margin-top:8px"></div></div>
 
-    <p class="sublabel">曲の保存</p>
+    <div id="songLibrary"><p class="sublabel">保存した曲・入れてある曲</p>
     <div class="row">
       <input class="txt" id="songName" aria-label="曲名" placeholder="曲名">
       <button id="songSave">保存</button>
@@ -232,7 +233,7 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
     <div class="row" style="margin-top:8px">
       <select id="songList" aria-label="保存した曲"></select>
       <button id="songOpen">開く</button><button id="songDel">消す</button>
-    </div>
+    </div></div>
 
     <details>
       <summary>別の端末に曲を移す</summary>
@@ -268,6 +269,10 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="lesson-data.js"></script>
+<script src="lesson-core.js"></script>
+<script src="lesson-audio.js"></script>
+<script src="lesson-ui.js"></script>
 <script>
 "use strict";
 const PREFIX = "mika-piano-";
@@ -451,6 +456,7 @@ function cleanSong(o) {
     name: String(o.name || "曲").slice(0, 40), meter, bars, bpm: clampN(o.bpm, 40, 200, 90), key: clampN(o.key, -12, 12, 0),
     rh: ["q","e","arp","hold"].includes(o.rh) ? o.rh : "q", lh: ["q","h","w","dot"].includes(o.lh) ? o.lh : "dot",
     countIn: o.countIn !== false, chords, sections, order,
+    ...LessonCore.fields(o, bars, meter),
   };
 }
 const SAMPLE = {
@@ -482,6 +488,16 @@ function presetFromText(p) {
   return { name: p.name, meter: p.meter, bpm: p.bpm, key: p.key, rh: p.rh, lh: p.lh, countIn: true, bars: bar, chords, sections, order };
 }
 const PRESETS = PRESET_TEXTS.map(presetFromText);
+const LESSON_PRESET = {
+  ...PRESETS[1], name: "つつみ込むように…（レッスン版）", scoreId: "tsutsumi-v2",
+  rh: "score", lh: "groove", countIn: false, leadBars: 2,
+  sections: [["intro","イントロ",0,11],["a1","Aメロ1",12,21],["b1","Bメロ1",22,30],
+    ["chorus1","サビ1",31,38],["a2","Aメロ2",39,48],["b2","Bメロ2",49,57],
+    ["chorus2","サビ2",58,67],["interlude","間奏",68,75],["bridge","Cメロ",76,87],
+    ["last1","大サビ1",88,95],["last2","大サビ2",96,103],["outro","アウトロ",104,111]]
+    .map(([id,name,start,end])=>({id,name,start,end})), order: []
+};
+PRESETS.push(LESSON_PRESET);
 
 // ---- 伴奏：音の並びを作る（先生・生徒の両方で同じ計算） ----
 // 拍は4分音符=1。barOffs は小節の中で音を出す位置
@@ -621,16 +637,18 @@ function teacher() {
   const conns = new Set();
   const dot = document.getElementById("tDot"), st = document.getElementById("tStatus");
   const refresh = () => { const n = [...conns].filter(c => c.open).length; dot.classList.toggle("on", n > 0); st.textContent = n ? `生徒さんとつながっています（${n}人）` : "生徒さんを待っています"; };
-  let peer;
+  let peer, lesson = null;
+  const broadcast = ev => conns.forEach(c => c.open && c.send(ev));
   const open = () => {
     peer = new Peer(PREFIX + code);
-    peer.on("connection", c => { conns.add(c); c.on("open", refresh); c.on("close", () => { conns.delete(c); refresh(); }); });
+    peer.on("connection", c => { conns.add(c); c.on("open", () => { refresh(); lesson?.onPeer(c); }); c.on("data", ev => lesson?.handle(ev,c)); c.on("close", () => { conns.delete(c); refresh(); }); });
     peer.on("disconnected", () => setTimeout(() => peer.reconnect(), 2000));
     peer.on("error", e => { st.textContent = e.type === "unavailable-id" ? "このURLは別の窓で開いています。ほかの窓を閉じてください" : "つながりにくくなっています（自動でつなぎ直します）"; if (e.type !== "unavailable-id" && peer.destroyed) setTimeout(open, 3000); });
   };
   open();
   let accHead = null;
   const send = ev => {
+    if (lesson && !ev.type.startsWith("lesson-")) lesson.stop(true);
     if (ev.type !== "note" && ev.type !== "song" && accHead) accHead.stop();
     conns.forEach(c => c.open && c.send(ev));
     if (document.getElementById("localSound").checked) perform(ev, tKb);
@@ -658,7 +676,7 @@ function teacher() {
   // スペース・矢印は「スケール」の画面のときだけ。文字を打っている間は効かせない
   let tab = "scale";
   document.addEventListener("keydown", e => {
-    if (tab !== "scale" || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (!document.querySelector(".lesson-settings[open]") || tab !== "scale" || e.metaKey || e.ctrlKey || e.altKey) return;
     const t = e.target;
     if (t && (t.isContentEditable || /^(TEXTAREA|SELECT)$/.test(t.tagName) || (t.tagName === "INPUT" && t.type !== "range" && t.type !== "checkbox"))) return;
     if (e.key === "ArrowUp") { e.preventDefault(); document.getElementById("up").click(); }
@@ -682,6 +700,9 @@ function teacher() {
   document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => { if (b.dataset.tab !== tab) showTab(b.dataset.tab); });
   let lastTab = null; try { lastTab = localStorage.getItem("pianoTab"); } catch (e) {}
   showTab(lastTab === "acc" ? "acc" : "scale", true);
+  lesson = new LessonPlayer("teacher", {api:accHead,cleanSong,parseChord,transposeSym,send:broadcast,stopLegacy:()=>{stopAll();accHead.stop();}});
+  window.lessonPlayer = lesson;
+  window.addEventListener("pagehide",()=>lesson.audio.stop());
 }
 
 // ---- 先生：伴奏 ----
@@ -691,19 +712,25 @@ function setupAcc(send) {
   const lsGet = k => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { return null; } };
   const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
   const savedSongs = () => { const o = lsGet(LS_SONGS); return o && typeof o === "object" && !Array.isArray(o) ? o : {}; };
-  let song = cleanSong(lsGet(LS_NOW)) || cleanSong(SAMPLE);
+  let song = cleanSong(lsGet(LS_NOW)) || cleanSong(LESSON_PRESET);
   let secName = "Aメロ", loopId = null, editing = null;
-  const keep = () => lsSet(LS_NOW, song);
+  const keep = () => {
+    Object.assign(song, LessonCore.fields(song,song.bars,song.meter));
+    const ok=lsSet(LS_NOW, song);
+    document.dispatchEvent(new CustomEvent("piano-song-change"));
+    return ok;
+  };
   const changed = () => { keep(); drawAll(); };
 
   // --- 曲の保存・読み込み ---
   const fillList = (sel) => {
     const l = $("songList"); l.innerHTML = "";
     const add = (v, t) => { const o = document.createElement("option"); o.value = v; o.textContent = t; l.appendChild(o); };
+    add("preset:2", LESSON_PRESET.name);
+    PRESETS.slice(0,2).forEach((p,i)=>add("preset:"+i,p.name));
     add("", SAMPLE.name);
-    PRESETS.forEach((p, i) => add("preset:" + i, "入れてある曲: " + p.name));
     Object.keys(savedSongs()).sort().forEach(n => add(n, n));
-    l.value = sel != null && [...l.options].some(o => o.value === sel) ? sel : "";
+    l.value = sel != null && [...l.options].some(o => o.value === sel) ? sel : Object.hasOwn(savedSongs(),song.name) ? song.name : "preset:"+Math.max(0,PRESETS.findIndex(p=>p.name===song.name));
   };
   const openSong = s => { const c = cleanSong(s); if (!c) return false; song = c; loopId = null; editing = null; changed(); return true; };
   $("songSave").onclick = () => {
@@ -740,6 +767,7 @@ function setupAcc(send) {
   $("chordRead").onclick = () => {
     const r = parseChart($("chordText").value, song.meter);
     if (!r.bars || !r.chords.length) { $("chordMsg").textContent = "コードが見つかりませんでした"; return; }
+    song.scoreId = null; song.scoreMap = [];
     song.bars = r.bars; song.chords = r.chords; song.sections = []; song.order = []; loopId = null; editing = null;
     const nly = r.chords.filter(c => c.lyric).length;
     $("chordMsg").textContent = `${r.bars}小節を入れました` + (nly ? `・歌詞${nly}か所` : "") + (r.bad.length ? `（読めなかった字: ${r.bad.slice(0, 5).join(" ")}）` : "");
@@ -877,6 +905,12 @@ function setupAcc(send) {
       if (Math.floor(hi / HB()) + 1 > 200) return "200小節より後ろには動かせません";
     }
     if (addBar && song.bars >= 200) return "200小節より多くはできません";
+    if (addBar && song.scoreId && p0 % HB()) return "譜面付きの曲は、小節の頭から挿入してください";
+    if (addBar) {
+      const bar=Math.floor(p0/HB());
+      if(song.scoreId) song.scoreMap.splice(bar,0,-1);
+      song.sections.forEach(sec=>{if(sec.start>=bar)sec.start++;if(sec.end>=bar)sec.end++;});
+    }
     S.forEach(c => { const p = posOf(c) + d; c.bar = Math.floor(p / HB()); c.beat = (p % HB()) / 2; });
     const need = S.length ? Math.max(...S.map(c => c.bar)) + 1 : 0;
     song.bars = Math.max(song.bars + (addBar ? 1 : 0), need);
@@ -919,12 +953,12 @@ function setupAcc(send) {
   ["edSym", "edLyric"].forEach(id => $(id).addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Enter" && !e.isComposing && e.keyCode !== 229) $("edOk").click(); }));
   $("edDel").onclick = () => { if (editing && editing.c) song.chords = song.chords.filter(x => x !== editing.c); editing = null; $("editor").classList.add("hide"); changed(); };
   $("edCancel").onclick = closeEditor;
-  $("barAdd").onclick = () => { if (song.bars < 200) { song.bars++; changed(); } };
+  $("barAdd").onclick = () => { if (song.bars < 200) { song.bars++; if(song.scoreId)song.scoreMap.push(-1); changed(); } };
   $("barDel").onclick = () => {
     if (song.bars <= 1) return;
     const last = song.bars - 1;
     if (song.chords.some(c => c.bar === last) && !confirm(`${last + 1}小節目のコードも消えます。よいですか？`)) return;
-    song.bars--; song.chords = song.chords.filter(c => c.bar < song.bars);
+    song.bars--; if(song.scoreId)song.scoreMap.pop(); song.chords = song.chords.filter(c => c.bar < song.bars);
     song.sections = song.sections.filter(x => x.start < song.bars).map(x => ({ ...x, end: Math.min(x.end, song.bars - 1) }));
     const ids = new Set(song.sections.map(x => x.id)); song.order = song.order.filter(id => ids.has(id));
     changed();
@@ -1008,6 +1042,7 @@ function setupAcc(send) {
   }
   function drawSuggest() {
     const box = $("secSuggest"); box.innerHTML = "";
+    if(song.scoreId)return;
     const gs = suggest().filter(g => !song.sections.some(x => x.name === g.name && x.start === g.start && x.end === g.start + g.len - 1));
     gs.forEach(g => {
       const d = document.createElement("div"); d.className = "cand";
@@ -1032,7 +1067,7 @@ function setupAcc(send) {
   const pickRow = (rowId, get, set) => {
     const row = $(rowId);
     row.querySelectorAll("button").forEach(b => b.onclick = () => { set(b.dataset.v); changed(); });
-    return () => row.querySelectorAll("button").forEach(b => b.classList.toggle("sel", b.dataset.v === String(get())));
+    return () => row.querySelectorAll("button").forEach(b => {const selected=b.dataset.v===String(get());b.classList.toggle("sel",selected);b.setAttribute("aria-pressed",String(selected));});
   };
   const drawRh = pickRow("rhRow", () => song.rh, v => song.rh = v);
   const drawLh = pickRow("lhRow", () => song.lh, v => song.lh = v);
@@ -1107,7 +1142,8 @@ function setupAcc(send) {
   const redraw = () => { if (grid.clientWidth && grid.clientWidth !== rw) { rw = grid.clientWidth; drawGrid(); } };
   addEventListener("resize", redraw);
   fillList(null); drawAll(); rw = grid.clientWidth;
-  return { stop: stopHead, redraw };
+  return { stop: stopHead, redraw, getSong:()=>JSON.parse(JSON.stringify(song)),
+    patch:values=>{Object.assign(song,values);changed();}, load:openSong };
 }
 
 // ---- 生徒 ----
@@ -1117,19 +1153,19 @@ function student(code) {
   const sKb = document.getElementById("sKb"); buildKb(sKb, null);
   const show = document.getElementById("nowNote");
   show._lyric = document.getElementById("sLyric"); show._next = document.getElementById("sNext");
-  document.getElementById("vol").oninput = e => { Tone.Destination.volume.value = +e.target.value; };
-  document.getElementById("start").onclick = async () => {
-    const b = document.getElementById("start"); b.disabled = true; b.textContent = "準備中…";
-    await unlock(); b.textContent = "音が出る状態です"; document.getElementById("startNote").innerHTML = "<small>この画面を開いたままにしてください。</small>";
-    sampler.triggerAttackRelease("C4", 0.5);
-  };
+  let lesson;
   let peer = new Peer(), conn = null;
+  lesson = new LessonPlayer("student", {initialSong:LESSON_PRESET,cleanSong,parseChord,transposeSym,unlock,
+    send:ev=>{if(conn?.open)conn.send(ev);},stopLegacy:stopAll});
+  window.lessonPlayer = lesson;
+  const clockTimer = setInterval(()=>{if(conn?.open)lesson.probe();},3000);
+  window.addEventListener("pagehide",()=>{clearInterval(clockTimer);lesson.audio.stop();});
   const connect = () => {
     if (peer.destroyed) peer = new Peer();
     conn = peer.connect(PREFIX + code, { reliable: true });
-    conn.on("open", () => { dot.classList.add("on"); st.textContent = "先生とつながりました"; });
-    conn.on("data", ev => perform(ev, sKb, show));
-    conn.on("close", () => { dot.classList.remove("on"); st.textContent = "つなぎ直しています…"; setTimeout(connect, 2000); });
+    conn.on("open", () => { dot.classList.add("on"); st.textContent = "先生とつながりました"; lesson.onPeer(conn); conn.send({type:"lesson-ready"}); });
+    conn.on("data", ev => {if(!lesson.handle(ev,conn)){lesson.stop(false);if(lesson.audio.enabled)perform(ev,sKb,show);}});
+    conn.on("close", () => { lesson.stop(false); dot.classList.remove("on"); st.textContent = "つなぎ直しています…"; setTimeout(connect, 2000); });
   };
   peer.on("open", connect);
   peer.on("error", e => { dot.classList.remove("on"); st.textContent = e.type === "peer-unavailable" ? "先生の画面がまだ開いていません（開いたら自動でつながります）" : "つなぎ直しています…"; setTimeout(() => { if (!conn || !conn.open) connect(); }, 3000); });

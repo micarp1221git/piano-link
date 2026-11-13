@@ -1,0 +1,72 @@
+:root{--paper:#f4f5f7;--ink:#303542;--coral:#795a78;--sage:#527e80;--line:#d9dce2;--muted:#737784;--plum:#684d68}
+main{max-width:1040px;padding-top:26px}
+button{border-width:1px;border-color:#b7b9c3;border-radius:4px;transition:background .12s}
+button:hover{background:#f0edf2}
+button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #967499;outline-offset:3px}
+button.main{background:var(--plum);border:1px solid var(--plum);color:white}
+button.main:hover{background:#553a56}
+.lesson-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:23px}
+.lesson-brand{font-size:13px;letter-spacing:.1em;color:var(--muted)}
+.lesson-head h1{font-family:"Yu Mincho","Hiragino Mincho ProN",serif;font-size:28px;font-weight:600;line-height:1.4;margin:5px 0 0}
+.lesson-head button{white-space:nowrap}
+.lesson-sections{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin-bottom:19px}
+.lesson-sections button{display:flex;justify-content:space-between;align-items:center;text-align:left;gap:5px;padding:10px 12px;background:#fff;min-height:51px}
+.lesson-sections small{font-size:11px;color:inherit;opacity:.65;font-variant-numeric:tabular-nums}
+.lesson-sections button.active{background:var(--plum);border-color:var(--plum);color:white}
+#student .lesson-sections button:disabled{opacity:1;cursor:default}
+.lesson-debug{white-space:pre-wrap;font:12px monospace;color:var(--muted)}
+.lesson-transport{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:0 0 20px}
+.lesson-transport .main{min-width:130px}
+.lesson-transport label{margin-left:8px;font-size:14px}
+.lesson-meta{margin-left:auto;color:var(--muted);font-size:13px}
+.lesson-now{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:end;border-top:1px solid var(--line);padding:16px 2px 12px}
+.lesson-position{display:flex;gap:14px;align-items:baseline;font-size:15px}
+.lesson-bar{font:28px Georgia,serif;font-variant-numeric:tabular-nums}
+.lesson-chord{font:600 30px Georgia,serif;min-height:38px;letter-spacing:-.02em;color:var(--plum)}
+.lesson-cue{font-size:14px;color:var(--plum);min-height:23px;font-weight:700}
+.lesson-beats{display:flex;gap:8px;justify-content:flex-end}
+.lesson-beats i{display:block;width:18px;height:5px;background:#d9dce2}
+.lesson-beats i.on{background:var(--plum)}
+.score-stage{background:white;border:1px solid var(--line);padding:20px 12px 12px;min-height:300px;overflow:hidden}
+.score-row{position:relative;width:100%;margin:0 0 22px}
+.score-row:last-child{margin-bottom:0;opacity:.55}
+.score-row img{display:block;width:100%;height:auto}
+.score-highlight{position:absolute;top:0;height:100%;background:#b5a2c230;border-top:3px solid #826086;pointer-events:none;transition:left .16s,width .16s}
+.score-progress{position:absolute;left:0;bottom:0;height:3px;width:100%;background:#826086;transform-origin:left}
+.score-numbers{position:absolute;left:0;top:-15px;color:var(--muted);font-size:10px}
+.lesson-footer{display:flex;gap:12px;justify-content:space-between;align-items:center;margin-top:12px;color:var(--muted);font-size:12px}
+.lesson-error{color:#9a3f46;min-height:24px;font-size:14px}
+.lesson-chords{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.lesson-chords div{border:1px solid var(--line);padding:12px;min-height:74px;overflow-wrap:anywhere}
+.lesson-chords small{display:block;font-size:11px;margin-bottom:8px}
+.lesson-chords .active{border-color:var(--plum);background:#eee7f0}
+.lesson-settings{width:min(960px,calc(100% - 32px));max-height:90dvh;padding:24px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink)}
+.lesson-settings::backdrop{background:#2324327a}
+.settings-head{display:flex;justify-content:space-between;align-items:center;position:sticky;top:-24px;background:var(--paper);z-index:10;padding:12px 0;border-bottom:1px solid var(--line)}
+.settings-head h2{font-size:20px;margin:0}
+.lesson-settings .tabs{margin-top:12px}
+.lesson-settings .tabs button{font-size:16px;min-height:45px}
+.lesson-settings .box{padding:16px 0}
+.lesson-settings .lynow,.lesson-settings #songPlay,.lesson-settings #songStop{display:none}
+.lesson-settings .setting-line{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:14px 0}
+.lesson-settings .setting-line>label{min-width:6em;font-size:14px}
+.lesson-settings input[type=range]{width:150px;max-width:45vw}
+.lesson-settings .subtle{font-size:12px;color:var(--muted)}
+.settings-sound{border-bottom:1px solid var(--line);padding-bottom:10px}
+.student-controls{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.student-controls .status{font-size:12px;font-weight:400}
+.student-controls input[type=range]{width:110px}
+.student-controls #start{font-size:15px;padding:9px 17px;min-height:44px}
+.scale-output{margin-top:20px}
+.scale-output .note{font-size:28px;min-height:0}
+.lesson-settings #rhRow,.lesson-settings #lhRow{gap:5px}
+.lesson-settings #rhRow button,.lesson-settings #lhRow button{font-size:13px;padding:8px 10px}
+@media(max-width:650px){
+ main{padding:18px 12px 40px}.lesson-head{margin-bottom:17px;gap:8px}.lesson-head h1{font-size:21px}.lesson-brand{font-size:11px}
+ .lesson-head button{padding:8px 12px}.lesson-sections{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.lesson-sections button{padding:8px 10px;font-size:13px;min-height:45px}
+ .lesson-transport{gap:6px;padding-bottom:13px}.lesson-transport .main{min-width:110px}.lesson-transport label{margin-left:0;font-size:12px}.lesson-meta{width:100%;margin:4px 0 0}
+ .lesson-chord{font-size:24px}.lesson-position{font-size:13px;gap:8px}.lesson-bar{font-size:23px}.score-stage{padding:20px 4px 8px;min-height:180px}.score-row{margin-bottom:22px}
+ .lesson-settings{padding:16px;width:calc(100% - 16px)}.settings-head{top:-16px}.lesson-settings .setting-line{gap:8px}.lesson-settings .setting-line>label{min-width:5em}
+ .lesson-chords{grid-template-columns:repeat(2,1fr)}.lesson-footer{align-items:flex-start}.lesson-beats i{width:13px}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
