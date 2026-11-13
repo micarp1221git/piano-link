@@ -66,7 +66,7 @@
       this.stop(false);this.song=updated;this.options.sectionId='';this.loadView();this.broadcast();
     }
     loadView() {
-      this.plan=LessonCore.compile(this.song,this.options,PIANO_SCORE,this.deps.parseChord);
+      this.plan=LessonCore.compile(this.song,this.options,(window.PIANO_SCORES||{})[this.song.scoreId]||PIANO_SCORE,this.deps.parseChord);
       this.q('.lesson-title').textContent=this.song.name;
       document.title=this.song.name+' | オンラインピアノ';
       const nav=this.q('.lesson-sections');nav.replaceChildren();
@@ -109,7 +109,7 @@
       try {await this.audio.prepare();}catch(e){if(intent===this.intent){this.error('ピアノ音を読み込めませんでした。もう一度再生してください。');this.updateButtons();}return;}
       if(intent!==this.intent)return;
       this.options.sectionId=sectionId||'';this.options.loop=this.q('.lesson-loop').checked;
-      this.plan=LessonCore.compile(this.song,this.options,PIANO_SCORE,this.deps.parseChord);
+      this.plan=LessonCore.compile(this.song,this.options,(window.PIANO_SCORES||{})[this.song.scoreId]||PIANO_SCORE,this.deps.parseChord);
       this.offset=0;this.startAt=Date.now()+700;this.status='playing';this.playClock=0;
       this.audio.setVolume($('localSound').checked?1:0);this.audio.start(this.plan,this.song,this.startAt,0,0);
       this.broadcast();this.updateButtons();this.lastSystem=null;
@@ -188,7 +188,7 @@
       this.q('.lesson-beats').querySelectorAll('i').forEach((el,i)=>el.classList.toggle('on',i===Math.floor(pos.count?Math.max(0,beat)%this.song.meter:pos.beat)));
       this.q('.lesson-sections').querySelectorAll('button').forEach(el=>el.classList.toggle('active',el.dataset.section===(pos.lead?target?.id:s?.id)));
       // 2026-11-13 みかさん「譜面の画像は外して公開」→ 公開版は画像を出さずコードの升目で見せる（画像は assets/ に手元だけ）
-      const src=this.song.scoreId&&window.SHOW_SCORE_IMAGES?this.song.scoreMap[pos.bar]:-1, box=PIANO_SCORE.positions[src];
+      const src=this.song.scoreId&&window.SHOW_SCORE_IMAGES?this.song.scoreMap[pos.bar]:-1, box=src>=0&&this.song.scoreId===PIANO_SCORE.id?PIANO_SCORE.positions[src]:null;
       const stage=this.q('.score-stage');
       if(box) {
         if(this.lastSystem!==box.system) {

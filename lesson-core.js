@@ -9,12 +9,16 @@
   const RH = ['score','q','e','arp','hold','off'];
   const LH = ['score','groove','q','e','arp','h','w','dot','off'];
   function fields(o, bars, meter) {
-    const attached = o.scoreId === 'tsutsumi-v2' && meter === 4;
+    // 2026-11-13 曲ごとの譜面データ（window.PIANO_SCORES）に対応。node のテストでは表が無いので つつみ込む…だけ知っている
+    const table = (typeof window !== 'undefined' && window.PIANO_SCORES) || {};
+    const known = table[o.scoreId] || (o.scoreId === 'tsutsumi-v2' ? {bars:112, meter:4} : null);
+    const attached = !!known && meter === known.meter;
+    const max = known ? known.bars : 0;
     return {
       scoreId: attached ? o.scoreId : null,
       scoreMap: attached ? Array.from({length:bars},(_,i) => {
         const v = Array.isArray(o.scoreMap) ? o.scoreMap[i] : i;
-        return Number.isInteger(v) && v >= 0 && v < 112 ? v : -1;
+        return Number.isInteger(v) && v >= 0 && v < max ? v : -1;
       }) : [],
       rh: RH.includes(o.rh) && (attached || o.rh !== 'score') ? o.rh : 'q',
       lh: LH.includes(o.lh) && (attached || !['score','groove'].includes(o.lh)) ? o.lh : 'q',

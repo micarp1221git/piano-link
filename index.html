@@ -233,7 +233,8 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
     <div class="row" style="margin-top:8px">
       <select id="songList" aria-label="保存した曲"></select>
       <button id="songOpen">開く</button><button id="songDel">消す</button>
-    </div></div>
+    </div>
+    <small style="display:block;margin-top:8px">入れたい曲があれば、Discordに譜面（PDF・写真・MusicXMLなど）を送ってください。こちらで「入れてある曲」に追加します。どの端末で開いても最初から入っています。</small></div>
 
     <details>
       <summary>別の端末に曲を移す</summary>
@@ -270,6 +271,7 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="lesson-data.js"></script>
+<script src="lesson-data-merry.js"></script>
 <script src="lesson-core.js"></script>
 <script src="lesson-audio.js"></script>
 <script src="lesson-ui.js"></script>
@@ -498,6 +500,12 @@ const LESSON_PRESET = {
     .map(([id,name,start,end])=>({id,name,start,end})), order: []
 };
 PRESETS.push(LESSON_PRESET);
+// 2026-11-13 みかさん「ダウンロードにあるいつかのメリークリスマスも追加したい」。耳コピ譜（MusicXML）から tools/musicxml_to_lesson.py で作った。
+// コードは譜面の表記どおり・区切りの A〜P は譜面の記号のまま（Aメロ等の名前は付いていない）。テンポは譜面の98
+const MERRY_PRESET = presetFromText({ name: "いつかのメリークリスマス（コード譜）", meter: 4, bpm: 98, key: 0, rh: "arp", lh: "w", text: "[A] | G - D - | C - G - | C - D - | G | Em - D - | C - G - | Am - Bm7 - | Cmaj7 | % |\n[B] | Cmaj7 - - Bm7 | Bm7 - Am7 - | D - Gmaj7 - |\n[C] | Gmaj7 Cmaj7 - - | Bm7 | Am7 - Am7/D D | Gmaj7 | Cmaj7 | Bm7 | Am7 - Am7/D - | Gmaj7 |\n[D] | Cmaj7 | Bm7 | F#m7 - B7 - | Em D/F# G - | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 - D - |\n[E] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 - D - |\n[F] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 | % |\n[G] | % | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 |\n[H] | Cmaj7 | Bm7 | F#m7 - B7 - | Em D/F# G - | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 - D - |\n[I] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 - D - |\n[J] | G - D - | C - G - | C - D - | G | Em - D - | C - G - | Am7 - Bm7 - | Cmaj7 | % |\n[K] | % | Bm7 | Am7 | Gmaj7 | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 |\n[L] | Cmaj7 | Bm7 | F#m7 - B7 - | Em D/F# G - | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 - D - |\n[M] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 |\n[N] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 | % | % |\n[O] | % | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 |\n[P] | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | % |" });
+const MERRY_LESSON = { ...MERRY_PRESET, name: "いつかのメリークリスマス（レッスン版）", scoreId: "merry-v1",
+  rh: "score", lh: "groove", countIn: false, leadBars: 2, order: [] };
+PRESETS.push(MERRY_LESSON, MERRY_PRESET); // preset:3 / preset:4
 
 // ---- 伴奏：音の並びを作る（先生・生徒の両方で同じ計算） ----
 // 拍は4分音符=1。barOffs は小節の中で音を出す位置
@@ -727,7 +735,9 @@ function setupAcc(send) {
     const l = $("songList"); l.innerHTML = "";
     const add = (v, t) => { const o = document.createElement("option"); o.value = v; o.textContent = t; l.appendChild(o); };
     add("preset:2", LESSON_PRESET.name);
+    add("preset:3", MERRY_LESSON.name);
     PRESETS.slice(0,2).forEach((p,i)=>add("preset:"+i,p.name));
+    add("preset:4", MERRY_PRESET.name);
     add("", SAMPLE.name);
     Object.keys(savedSongs()).sort().forEach(n => add(n, n));
     l.value = sel != null && [...l.options].some(o => o.value === sel) ? sel : Object.hasOwn(savedSongs(),song.name) ? song.name : "preset:"+Math.max(0,PRESETS.findIndex(p=>p.name===song.name));
