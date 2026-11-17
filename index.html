@@ -492,7 +492,8 @@ function presetFromText(p) {
 const PRESETS = PRESET_TEXTS.map(presetFromText);
 const LESSON_PRESET = {
   ...PRESETS[1], name: "つつみ込むように…（レッスン版）", scoreId: "tsutsumi-v2",
-  rh: "score", lh: "groove", countIn: false, leadBars: 2,
+  // 2026-11-17 みかさん「左手のリズムがイマイチ。シンプルに4分とか8分」→ 最初は4分（groove は譜面の分散和音のリズムを根音1つで弾くので、同じ音がつっかえて聞こえた）
+  rh: "score", lh: "q", countIn: false, leadBars: 2,
   sections: [["intro","イントロ",0,11],["a1","Aメロ1",12,21],["b1","Bメロ1",22,30],
     ["chorus1","サビ1",31,38],["a2","Aメロ2",39,48],["b2","Bメロ2",49,57],
     ["chorus2","サビ2",58,67],["interlude","間奏",68,75],["bridge","Cメロ",76,87],
@@ -504,7 +505,7 @@ PRESETS.push(LESSON_PRESET);
 // コードは譜面の表記どおり・区切りの A〜P は譜面の記号のまま（Aメロ等の名前は付いていない）。テンポは譜面の98
 const MERRY_PRESET = presetFromText({ name: "いつかのメリークリスマス（コード譜）", meter: 4, bpm: 98, key: 0, rh: "arp", lh: "w", text: "[A] | G - D - | C - G - | C - D - | G | Em - D - | C - G - | Am - Bm7 - | Cmaj7 | % |\n[B] | Cmaj7 - - Bm7 | Bm7 - Am7 - | D - Gmaj7 - |\n[C] | Gmaj7 Cmaj7 - - | Bm7 | Am7 - Am7/D D | Gmaj7 | Cmaj7 | Bm7 | Am7 - Am7/D - | Gmaj7 |\n[D] | Cmaj7 | Bm7 | F#m7 - B7 - | Em D/F# G - | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 - D - |\n[E] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 - D - |\n[F] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 | % |\n[G] | % | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 |\n[H] | Cmaj7 | Bm7 | F#m7 - B7 - | Em D/F# G - | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 - D - |\n[I] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 - D - |\n[J] | G - D - | C - G - | C - D - | G | Em - D - | C - G - | Am7 - Bm7 - | Cmaj7 | % |\n[K] | % | Bm7 | Am7 | Gmaj7 | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 |\n[L] | Cmaj7 | Bm7 | F#m7 - B7 - | Em D/F# G - | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 - D - |\n[M] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 |\n[N] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 | % | % |\n[O] | % | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 |\n[P] | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | % |" });
 const MERRY_LESSON = { ...MERRY_PRESET, name: "いつかのメリークリスマス（レッスン版）", scoreId: "merry-v1",
-  rh: "score", lh: "groove", countIn: false, leadBars: 2, order: [] };
+  rh: "score", lh: "q", countIn: false, leadBars: 2, order: [] };
 PRESETS.push(MERRY_LESSON, MERRY_PRESET); // preset:3 / preset:4
 
 // ---- 伴奏：音の並びを作る（先生・生徒の両方で同じ計算） ----
