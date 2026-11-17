@@ -139,3 +139,11 @@ test('back: beats 1/3 soft bass, beats 2/4 chord (2026-11-17)',()=>{
  for(const b of [8,10,12,14]) {assert.equal(on(b).length,1);assert.ok(on(b)[0][4]<0.6);}
  for(const b of [9,11,13,15]) {assert.ok(on(b).length>=3);assert.ok(on(b).every(n=>n[4]>0.6));}
 });
+
+test('click: one tick per beat during the song, accent on beat 1 (2026-11-17)',()=>{
+ const s=song();s.click=true;s.countIn=false;
+ assert.equal(clean(JSON.parse(JSON.stringify(s))).click,true);
+ const p=compile(s,{});const ticks=p.notes.filter(n=>n[3]===0);
+ assert.equal(ticks.length,p.total);assert.equal(ticks[0][1],84);assert.equal(ticks[1][1],79);assert.equal(ticks[4][1],84);
+ s.click=false;assert.equal(compile(s,{}).notes.filter(n=>n[3]===0).length,0);
+});

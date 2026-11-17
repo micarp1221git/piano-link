@@ -222,6 +222,7 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
     <div class="row" style="margin-top:8px">
       <button id="keyDown">▼</button><span class="keyv" id="keyVal">キー ±0</span><button id="keyUp">▲</button>
       <label><input type="checkbox" id="countIn" checked> 最初に1小節カウント</label>
+      <label><input type="checkbox" id="click"> クリック（曲の間ずっと拍を鳴らす）</label>
     </div>
     <div class="row hide" id="loopRow" style="margin-top:8px"></div></div>
 
@@ -571,6 +572,7 @@ function renderSong(song, loopId) {
         });
       } else hitsIn(from, to, meter, barOffs(song.lh, meter)).forEach(([p, d]) => notes.push([at(p), bm + K, d * 0.95, isDown(p) ? 68 : 56]));
     });
+    if (song.click) for (let k = 0; k < g1 - g0; k++) notes.push([t + k, (g0 + k) % meter ? 79 : 84, 0.3, (g0 + k) % meter ? 30 : 45]); // クリック（11/17）
     t += g1 - g0;
   }
   notes.sort((a, b) => a[0] - b[0]);
@@ -1101,6 +1103,7 @@ function setupAcc(send) {
   $("keyUp").onclick = () => { song.key = Math.min(12, song.key + 1); drawKey(); keep(); };
   $("keyDown").onclick = () => { song.key = Math.max(-12, song.key - 1); drawKey(); keep(); };
   $("countIn").onchange = () => { song.countIn = $("countIn").checked; keep(); };
+  $("click").onchange = () => { song.click = $("click").checked; keep(); };
 
   // --- 鳴らす・止める・今どこ ---
   let head = null;
@@ -1151,6 +1154,7 @@ function setupAcc(send) {
     $("songName").value = song.name;
     bpm.value = song.bpm; $("sBpmVal").textContent = song.bpm;
     $("countIn").checked = song.countIn;
+    $("click").checked = !!song.click;
     drawKey(); drawRh(); drawLh(); drawMeter(); drawSecNames();
     $("secFrom").max = $("secTo").max = song.bars;
     if (!$("editor").classList.contains("hide") && !editing) $("editor").classList.add("hide");

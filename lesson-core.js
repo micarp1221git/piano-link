@@ -25,6 +25,7 @@
       rh: RH.includes(o.rh) && (attached || o.rh !== 'score') ? o.rh : 'q',
       lh: LH.includes(o.lh) && (attached || !['score','groove'].includes(o.lh)) ? o.lh : 'q',
       leadBars: [0,1,2].includes(+o.leadBars) ? +o.leadBars : 2,
+      click: o.click === true, // 2026-11-17 みかさん「クリックオンもあるといいな」＝曲の間ずっと拍ごとに鳴らす
       rightVolume: Number.isFinite(+o.rightVolume) ? Math.max(0,Math.min(100,+o.rightVolume)) : 75,
       leftVolume: Number.isFinite(+o.leftVolume) ? Math.max(0,Math.min(100,+o.leftVolume)) : 75
     };
@@ -133,6 +134,7 @@
       }
       t+=end-from;
     }
+    if(song.click) for(let k=count;k<t-EPS;k++) notes.push([k,(k-count)%meter?79:84,.12,0,.25]);
     const loopFrom=count+lead*meter, loopLength=section&&options.loop?(section.end-section.start+1)*meter:0;
     const cycleNotes=[];
     if(loopLength) for(const n of notes) {
