@@ -130,3 +130,12 @@ test('audio cancellation includes future scheduled notes, resume catches held no
  audio.start(p,s,100000,2,0);assert.ok(sources.at(-1).offset>0);audio.stop();
  audio.start({notes:[],cycleNotes:[],total:4,loopLength:4},s,100000);assert.equal(timers.size,0);
 });
+
+test('back: beats 1/3 soft bass, beats 2/4 chord (2026-11-17)',()=>{
+ const s=song();s.rh='off';s.lh='back';
+ const c=clean(JSON.parse(JSON.stringify(s)));assert.equal(c.lh,'back');
+ const lh=C.notesForSong(s,score,parse).filter(n=>n[3]===2&&n[0]>=8&&n[0]<16);
+ const on=x=>lh.filter(n=>Math.abs(n[0]-x)<1e-6);
+ for(const b of [8,10,12,14]) {assert.equal(on(b).length,1);assert.ok(on(b)[0][4]<0.6);}
+ for(const b of [9,11,13,15]) {assert.ok(on(b).length>=3);assert.ok(on(b).every(n=>n[4]>0.6));}
+});

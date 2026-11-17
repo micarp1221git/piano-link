@@ -211,7 +211,7 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
       <button data-v="q">4分で刻む</button><button data-v="e">8分で刻む</button><button data-v="arp">アルペジオ</button><button data-v="hold">伸ばす</button>
     </div>
     <div class="row" id="lhRow" style="margin-top:8px"><span class="label" style="margin:0">左手</span><button data-v="groove">この曲のリズム</button><button data-v="score">譜面どおり</button><button data-v="e">8分</button><button data-v="arp">アルペジオ</button><button data-v="off">なし</button>
-      <button data-v="q">4分</button><button data-v="h">2分</button><button data-v="w">全音符</button><button data-v="dot">ターーン・タ・ターーン</button>
+      <button data-v="q">4分</button><button data-v="back">2・4拍目に和音</button><button data-v="h">2分</button><button data-v="w">全音符</button><button data-v="dot">ターーン・タ・ターーン</button>
     </div>
     <div class="row" id="sMeterRow" style="margin-top:8px"><span class="label" style="margin:0">拍子</span>
       <button data-v="2">2拍子</button><button data-v="3">3拍子</button><button data-v="4">4拍子</button>
@@ -456,7 +456,7 @@ function cleanSong(o) {
   const order = (Array.isArray(o.order) ? o.order : []).map(String).filter(id => ids.has(id)).slice(0, 64);
   return {
     name: String(o.name || "曲").slice(0, 40), meter, bars, bpm: clampN(o.bpm, 40, 200, 90), key: clampN(o.key, -12, 12, 0),
-    rh: ["q","e","arp","hold"].includes(o.rh) ? o.rh : "q", lh: ["q","h","w","dot"].includes(o.lh) ? o.lh : "dot",
+    rh: ["q","e","arp","hold"].includes(o.rh) ? o.rh : "q", lh: ["q","back","h","w","dot"].includes(o.lh) ? o.lh : "dot",
     countIn: o.countIn !== false, chords, sections, order,
     ...LessonCore.fields(o, bars, meter),
   };
@@ -562,7 +562,14 @@ function renderSong(song, loopId) {
       }
       // 左手：ド2〜シ2。分数コードは / の後ろの音
       const bm = 36 + (c.ch.bass != null ? c.ch.bass : root);
-      hitsIn(from, to, meter, barOffs(song.lh, meter)).forEach(([p, d]) => notes.push([at(p), bm + K, d * 0.95, isDown(p) ? 68 : 56]));
+      if (song.lh === "back") { // 1・3拍目に小さめの低音、2・4拍目に和音（ド3〜シ3）（2026-11-17）
+        const low = pcs.map(pc => 48 + pc).sort((a, b) => a - b);
+        hitsIn(from, to, meter, barOffs("q", meter)).forEach(([p, d]) => {
+          const x = Math.round((((p % meter) + meter) % meter) * 1000) / 1000;
+          if (meter === 4 ? x % 2 === 1 : x > 0) low.forEach(m => notes.push([at(p), m + K, d * 0.8, 60]));
+          else notes.push([at(p), bm + K, d * 0.95, 46]);
+        });
+      } else hitsIn(from, to, meter, barOffs(song.lh, meter)).forEach(([p, d]) => notes.push([at(p), bm + K, d * 0.95, isDown(p) ? 68 : 56]));
     });
     t += g1 - g0;
   }

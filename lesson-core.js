@@ -7,7 +7,9 @@
   'use strict';
   const EPS = 1e-7;
   const RH = ['score','q','e','arp','hold','off'];
-  const LH = ['score','groove','q','e','arp','h','w','dot','off'];
+  const LH = ['score','groove','q','back','e','arp','h','w','dot','off'];
+  // 2026-11-17 みかさん「1拍目に低い音があるとアクセントが来る。裏でとるリズムは2拍目と4拍目」→ back＝1・3拍目に小さめの低音、2・4拍目に和音
+  const isBack = (x,meter) => meter===4 ? x%2===1 : x>0;
   function fields(o, bars, meter) {
     // 2026-11-13 曲ごとの譜面データ（window.PIANO_SCORES）に対応。node のテストでは表が無いので つつみ込む…だけ知っている
     const table = (typeof window !== 'undefined' && window.PIANO_SCORES) || {};
@@ -49,7 +51,7 @@
     return c;
   }
   function rhythm(mode,meter) {
-    if (mode==='q') return Array.from({length:meter},(_,i)=>i);
+    if (mode==='q'||mode==='back') return Array.from({length:meter},(_,i)=>i);
     if (mode==='e'||mode==='arp') return Array.from({length:meter*2},(_,i)=>i/2);
     if (mode==='h') return [0,2].filter(x=>x<meter);
     if (mode==='dot') return [0,1.5,2].filter(x=>x<meter);
@@ -94,6 +96,12 @@
         const arp=hand===1?ch.iv.map(iv=>base+iv):[base,...ch.iv.slice(1).map(iv=>36+ch.root+iv),base+12];
         points.forEach((p,j)=> {
           const duration=((points[j+1]??to)-p)*(mode==='hold'?.98:.88);
+          if (mode==='back' && hand===2) {
+            const x=Math.round(((p%song.meter)+song.meter)%song.meter*1000)/1000;
+            if (isBack(x,song.meter)) [...new Set(ch.iv.map(iv=>48+(ch.root+iv)%12))].sort((a,b)=>a-b).forEach(m=>out.push([p,m+song.key,duration*.85,hand,.66]));
+            else out.push([p,base+song.key,duration,hand,.5]);
+            return;
+          }
           (mode==='arp'?[arp[j%arp.length]]:tones).forEach(m=>out.push([p,m+song.key,duration,hand,hand===1?.52:.7]));
         });
       });
