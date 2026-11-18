@@ -31,7 +31,7 @@
       this.q=selector=>this.root.querySelector(selector);
       if(teacher) {
         const dialog=document.createElement('dialog');dialog.className='lesson-settings';dialog.setAttribute('aria-label','先生の設定');
-        dialog.innerHTML='<div class="settings-head"><h2>先生の設定</h2><button class="settings-close">閉じる</button></div><div class="settings-sound"><div class="setting-line"><label for="lessonLead">区間の助走</label><select id="lessonLead"><option value="2">2小節前から</option><option value="1">1小節前から</option><option value="0">その小節から</option></select></div><div class="setting-line"><label for="lessonRight">右手の音量</label><input id="lessonRight" type="range" min="0" max="100"><output id="lessonRightVal"></output><label for="lessonLeft">左手の音量</label><input id="lessonLeft" type="range" min="0" max="100"><output id="lessonLeftVal"></output></div></div>';
+        dialog.innerHTML='<div class="settings-head"><h2>先生の設定</h2><button class="settings-close">閉じる</button></div><div class="settings-sound"><div class="setting-line"><label for="lessonLead">区間の助走</label><select id="lessonLead"><option value="2">2小節前から</option><option value="1">1小節前から</option><option value="0">その小節から</option></select></div><div class="setting-line"><label for="lessonRight">右手の音量</label><input id="lessonRight" type="range" min="0" max="100"><output id="lessonRightVal"></output><label for="lessonLeft">左手の音量</label><input id="lessonLeft" type="range" min="0" max="100"><output id="lessonLeftVal"></output></div><div class="setting-line"><button class="lesson-share" type="button">この設定で、レッスン生用のURLをコピー</button><small class="lesson-share-msg"></small></div></div>';
         dialog.insertBefore($('songLibrary'),dialog.querySelector('.settings-sound'));
         dialog.querySelector('.settings-sound').prepend($('accompanimentSettings'));
         $('tabAcc').textContent='コード・区切り';
@@ -40,6 +40,12 @@
         for(const el of [this.host.querySelector('.tabs'),$('paneScale'),$('paneAcc')])dialog.append(el);
         this.host.append(dialog);this.dialog=dialog;
         dialog.querySelector('.settings-close').onclick=()=>dialog.close();
+        // 2026-11-18 みかさん「私の方と生徒さんのほうと連動させられないか」＝今の設定（音量・速さ・キー・右手左手）をURLに入れて、ひとりで練習のページをその設定で開く
+        dialog.querySelector('.lesson-share').onclick=()=> {
+          const msg=dialog.querySelector('.lesson-share-msg'),url=this.deps.practiceUrl&&this.deps.practiceUrl(this.song);
+          if(!url){msg.textContent='この曲は、まだレッスン生用のページがありません';return;}
+          (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>{msg.textContent='コピーしました';},()=>{msg.textContent=url;});
+        };
         this.q('.lesson-open-settings').onclick=()=>{dialog.showModal();$('tabAcc').click();this.deps.api.redraw();};
         dialog.addEventListener('close',()=>this.q('.lesson-open-settings').focus());
         this.q('.lesson-play').onclick=()=>this.status==='paused'?this.resume():this.play('');
