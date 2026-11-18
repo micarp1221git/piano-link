@@ -8,7 +8,7 @@
       this.status='stopped';this.offset=0;this.options={sectionId:'',loop:false};this.intent=0;
       this.epoch=Math.random().toString(36).slice(2);this.seq=0;this.lastIncoming=-1;
       this.host=$(role);this.mount();
-      this.song=deps.cleanSong(deps.api?deps.api.getSong():deps.initialSong);
+      this.song=deps.cleanSong(deps.api?deps.api.getSong():deps.initialSong);this.baseBpm=this.song.bpm;
       if(new URLSearchParams(location.search).has('debug')) {
         this.debug=document.createElement('pre');this.debug.className='lesson-debug';this.root.append(this.debug);
         const report=e=>{this.debugError=String(e.reason?.stack||e.error?.stack||e.message||'Error');};
@@ -17,12 +17,13 @@
       this.loadView();this.animate();
     }
     mount() {
-      const teacher=this.role==='teacher';
+      // 2026-11-18 みかさん「OverDriveをレッスン生がパソコンやスマホで開けるように」＝role 'practice'（ひとりで練習）。再生・区間・速さは使える、先生の設定とつなぐ機能は無し
+      const teacher=this.role==='teacher', ctl=this.role!=='student', practice=this.role==='practice';
       [...this.host.children].filter(e=>e.matches('h1,.sub')).forEach(e=>e.hidden=true);
       this.root=document.createElement('div');this.root.className='lesson';
-      this.root.innerHTML=`<header class="lesson-head"><div><div class="lesson-brand">オンラインピアノ · ${teacher?'LESSON':'SCORE'}</div><h1 class="lesson-title"></h1></div>${teacher?'<button class="lesson-open-settings">設定</button>':''}</header>
+      this.root.innerHTML=`<header class="lesson-head"><div><div class="lesson-brand">オンラインピアノ · ${teacher?'LESSON':practice?'PRACTICE':'SCORE'}</div><h1 class="lesson-title"></h1></div>${teacher?'<button class="lesson-open-settings">設定</button>':''}</header>
         <nav class="lesson-sections" aria-label="ここから再生"></nav>
-        ${teacher?'<div class="lesson-transport"><button class="main lesson-play">▶ はじめから</button><button class="lesson-pause" disabled>一時停止</button><button class="lesson-stop">停止</button><label><input type="checkbox" class="lesson-loop"> 区間をくり返す</label><span class="lesson-meta"></span></div>':'<div class="student-controls"></div>'}
+        ${ctl?'<div class="lesson-transport"><button class="main lesson-play">▶ はじめから</button><button class="lesson-pause" disabled>一時停止</button><button class="lesson-stop">停止</button><label><input type="checkbox" class="lesson-loop"> 区間をくり返す</label>'+(practice?'<label>速さ <select class="lesson-speed"><option value="100">100%</option><option value="90">90%</option><option value="80">80%</option><option value="70">70%</option><option value="60">60%</option></select></label>':'')+'<span class="lesson-meta"></span></div>':'<div class="student-controls"></div>'}
         <div class="lesson-now"><div class="lesson-position"><span class="lesson-section-name"></span><span><b class="lesson-bar">1</b> 小節</span></div><div class="lesson-chord"></div><div class="lesson-cue" role="status"></div><div class="lesson-beats" aria-label="拍"></div></div>
         <div class="score-stage" aria-label="再生中の譜面"></div>
         <div class="lesson-footer"><span class="lesson-mode"></span><span class="score-caption">元の譜面</span></div><div class="lesson-error" role="alert"></div>`;
@@ -51,6 +52,12 @@
         document.addEventListener('piano-song-change',()=>this.changed());
         // Space belongs to playback only when the settings are closed.
         document.addEventListener('keydown',e=> {if(e.code==='Space'&&!dialog.open&&!/INPUT|SELECT|TEXTAREA|BUTTON/.test(e.target.tagName)&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();this.status==='playing'?this.pause():this.status==='paused'?this.resume():this.play(this.options.sectionId);}});
+      } else if(practice) {
+        this.q('.lesson-play').onclick=()=>this.status==='paused'?this.resume():this.play('');
+        this.q('.lesson-pause').onclick=()=>this.pause();
+        this.q('.lesson-stop').onclick=()=>this.stop(true);
+        this.q('.lesson-loop').onchange=e=> {this.options.loop=e.target.checked;if(this.status==='playing')this.play(this.options.sectionId);};
+        this.q('.lesson-speed').onchange=e=> {this.stop(false);this.song.bpm=Math.round(this.baseBpm*+e.target.value/100);this.loadView();};
       } else {
         const controls=this.q('.student-controls');controls.append($('start'));
         const status=$('sStatus').closest('p');controls.append(status);
@@ -74,11 +81,12 @@
         const b=document.createElement('button');b.dataset.section=s.id;
         const name=document.createElement('span');name.textContent=s.name;
         const bar=document.createElement('small');bar.textContent=String(s.start+1).padStart(2,'0');b.append(name,bar);
-        if(this.role==='teacher')b.onclick=()=>this.play(s.id);else {b.disabled=true;b.tabIndex=-1;}
+        if(this.role!=='student')b.onclick=()=>this.play(s.id);else {b.disabled=true;b.tabIndex=-1;}
         nav.append(b);
       }
       this.q('.lesson-mode').textContent=`右手 ${MODES[this.song.rh]}　／　左手 ${MODES[this.song.lh]}`;
       this.q('.score-caption').textContent=this.song.scoreId&&window.SHOW_SCORE_IMAGES?'元の譜面'+(this.song.key?' · 表示は元のキー':''):'コード譜';
+      if(this.role==='practice')this.q('.lesson-meta').textContent=`♩ ${this.song.bpm}`;
       if(this.role==='teacher') {
         this.q('.lesson-meta').textContent=`♩ ${this.song.bpm}　キー ${this.song.key>0?'+':''}${this.song.key}　${this.song.leadBars}小節前から`;
         $('lessonLead').value=this.song.leadBars;
@@ -131,7 +139,7 @@
       this.deps.stopLegacy();this.updateButtons();if(send)this.broadcast();this.drawPosition();
     }
     updateButtons() {
-      if(this.role!=='teacher')return;
+      if(this.role==='student')return;
       this.q('.lesson-play').textContent=this.status==='paused'?'▶ 続きから':'▶ はじめから';
       this.q('.lesson-pause').disabled=this.status!=='playing';
     }

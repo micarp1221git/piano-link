@@ -247,6 +247,11 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
   </div>
 </section>
 
+<!-- ひとりで練習（2026-11-18） -->
+<section id="practice" class="hide">
+  <p class="practice-note" id="practiceNote" style="color:#666;margin:8px 0 0"><small>▶を押すと、ピアノが鳴ります（最初は音の準備に数秒かかります）。イヤホンがおすすめです。<br>iPhoneは、マナーモード（横のスイッチ）を切ると音が出ます。区間のボタンを押すと、そこから鳴ります。</small></p>
+</section>
+
 <!-- 生徒 -->
 <section id="student" class="hide">
   <h1>オンラインピアノ</h1>
@@ -271,12 +276,12 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="lesson-data.js?v=20261118c"></script>
-<script src="lesson-data-merry.js?v=20261118c"></script>
-<script src="lesson-data-overdrive.js?v=20261118c"></script>
-<script src="lesson-core.js?v=20261118c"></script>
-<script src="lesson-audio.js?v=20261118c"></script>
-<script src="lesson-ui.js?v=20261118c"></script>
+<script src="lesson-data.js?v=20261118d"></script>
+<script src="lesson-data-merry.js?v=20261118d"></script>
+<script src="lesson-data-overdrive.js?v=20261118d"></script>
+<script src="lesson-core.js?v=20261118d"></script>
+<script src="lesson-audio.js?v=20261118d"></script>
+<script src="lesson-ui.js?v=20261118d"></script>
 <script>
 "use strict";
 const PREFIX = "mika-piano-";
@@ -1214,8 +1219,23 @@ function student(code) {
   peer.on("error", e => { dot.classList.remove("on"); st.textContent = e.type === "peer-unavailable" ? "先生の画面がまだ開いていません（開いたら自動でつながります）" : "つなぎ直しています…"; setTimeout(() => { if (!conn || !conn.open) connect(); }, 3000); });
 }
 
-const room = new URLSearchParams(location.search).get("room");
-room ? student(room.replace(/[^a-z0-9]/g, "")) : teacher();
+// ---- ひとりで練習（?practice=overdrive）----
+// 2026-11-18 みかさん「このOverDriveを実際のレッスン生がパソコンだかスマホだかで開けるようにしておいて」
+const PRACTICE_SONGS = { overdrive: OD_LESSON };
+function practice(key) {
+  const preset = PRACTICE_SONGS[key];
+  if (!preset) return false;
+  document.getElementById("practice").classList.remove("hide");
+  const song = cleanSong(preset);
+  const lesson = new LessonPlayer("practice", {api:{getSong:()=>song,patch:()=>{},redraw:()=>{}},cleanSong,parseChord,transposeSym,send:()=>{},stopLegacy:()=>{}});
+  window.lessonPlayer = lesson;
+  window.addEventListener("pagehide",()=>lesson.audio.stop());
+  return true;
+}
+
+const params = new URLSearchParams(location.search), room = params.get("room");
+if (room) student(room.replace(/[^a-z0-9]/g, ""));
+else if (!practice((params.get("practice") || "").toLowerCase())) teacher();
 </script>
 </body>
 </html>
