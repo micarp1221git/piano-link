@@ -29,6 +29,7 @@
     }
     setVolume(value) {this.volume=Math.max(0,Math.min(2,value));if(this.master)this.master.gain.value=this.volume;}
     note(n,when,seconds,skip,song) {
+      if(n[1]===127){this.stick(when,70/100*n[4]);return;} // 2026-11-18 みかさん「カウントはドラムのスティックのカチカチ」＝譜面の手の番号0・高さ127はスティックの音
       const ctx=this.context, midi=n[1], nearest=PITCHES.reduce((a,b)=>Math.abs(b-midi)<Math.abs(a-midi)?b:a);
       const source=ctx.createBufferSource(), gain=ctx.createGain(), rate=Math.pow(2,(midi-nearest)/12);
       source.buffer=this.buffers.get(nearest);source.playbackRate.value=rate;
@@ -41,6 +42,24 @@
       const offset=Math.min(Math.max(0,skip*rate),Math.max(0,source.buffer.duration-.01));
       this.sources.add(source);source.onended=()=>{this.sources.delete(source);source.disconnect();gain.disconnect();};
       source.start(when,offset);source.stop(when+seconds+.12);
+    }
+    stick(when,volume) {
+      // スティック同士を打つ「カチッ」: 高い所だけ残した短い雑音＋ごく短い高い音（太鼓・リムショットではない）
+      const ctx=this.context;
+      if(!this.noise) {
+        const len=Math.floor(ctx.sampleRate*.05),buf=ctx.createBuffer(1,len,ctx.sampleRate),d=buf.getChannelData(0);
+        for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,4);
+        this.noise=buf;
+      }
+      const src=ctx.createBufferSource(),bp=ctx.createBiquadFilter(),g=ctx.createGain(),osc=ctx.createOscillator(),og=ctx.createGain();
+      src.buffer=this.noise;bp.type='bandpass';bp.frequency.value=3500;bp.Q.value=1.4;
+      osc.type='triangle';osc.frequency.value=2500;
+      g.gain.setValueAtTime(volume*2.2,when);g.gain.exponentialRampToValueAtTime(.0001,when+.045);
+      og.gain.setValueAtTime(volume*.6,when);og.gain.exponentialRampToValueAtTime(.0001,when+.025);
+      src.connect(bp);bp.connect(g);g.connect(this.master);osc.connect(og);og.connect(this.master);
+      this.sources.add(src);
+      src.onended=()=>{this.sources.delete(src);[src,bp,g,osc,og].forEach(x=>x.disconnect());};
+      src.start(when);src.stop(when+.06);osc.start(when);osc.stop(when+.04);
     }
     start(plan,song,startAt,offset=0,clockOffset=0) {
       this.stop();if(!this.enabled)return;
