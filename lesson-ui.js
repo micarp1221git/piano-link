@@ -23,12 +23,17 @@
       this.root=document.createElement('div');this.root.className='lesson';
       this.root.innerHTML=`<header class="lesson-head"><div><div class="lesson-brand">オンラインピアノ · ${teacher?'LESSON':practice?'PRACTICE':'SCORE'}</div><h1 class="lesson-title"></h1></div>${teacher?'<button class="lesson-open-settings">設定</button>':''}</header>
         <nav class="lesson-sections" aria-label="ここから再生"></nav>
-        ${ctl?'<div class="lesson-transport"><button class="main lesson-play">▶ はじめから</button><button class="lesson-pause" disabled>一時停止</button><button class="lesson-stop">停止</button><label><input type="checkbox" class="lesson-loop"> 区間をくり返す</label>'+(practice?'<label>速さ <select class="lesson-speed"><option value="100">100%</option><option value="90">90%</option><option value="80">80%</option><option value="70">70%</option><option value="60">60%</option></select></label><label>メロディ <input type="range" class="lesson-rvol" min="0" max="100"></label><label>伴奏 <input type="range" class="lesson-lvol" min="0" max="100"></label>':'')+'<span class="lesson-meta"></span></div>':'<div class="student-controls"></div>'}
+        ${ctl?'<div class="lesson-transport"><button class="main lesson-play">▶ はじめから</button><button class="lesson-pause" disabled>一時停止</button><button class="lesson-stop">停止</button><label><input type="checkbox" class="lesson-loop"> 区間をくり返す</label><span class="lesson-keybox"><button class="lesson-keydown" type="button" aria-label="半音下げる">▼</button><b class="lesson-keyval">キー ±0</b><button class="lesson-keyup" type="button" aria-label="半音上げる">▲</button></span>'+(practice?'<label>速さ <select class="lesson-speed"><option value="100">100%</option><option value="90">90%</option><option value="80">80%</option><option value="70">70%</option><option value="60">60%</option></select></label><label>メロディ <input type="range" class="lesson-rvol" min="0" max="100"></label><label>伴奏 <input type="range" class="lesson-lvol" min="0" max="100"></label>':'')+'<span class="lesson-meta"></span></div>':'<div class="student-controls"></div>'}
         <div class="lesson-now"><div class="lesson-position"><span class="lesson-section-name"></span><span><b class="lesson-bar">1</b> 小節</span></div><div class="lesson-chord"></div><div class="lesson-cue" role="status"></div><div class="lesson-beats" aria-label="拍"></div></div>
         <div class="score-stage" aria-label="再生中の譜面"></div>
         <div class="lesson-footer"><span class="lesson-mode"></span><span class="score-caption">元の譜面</span></div><div class="lesson-error" role="alert"></div>`;
       this.host.prepend(this.root);
       this.q=selector=>this.root.querySelector(selector);
+      if(ctl) {
+        // 2026-11-18 みかさん「全部の音を半音下げる・上げる。オクターブ違いにならないまで、プラスマイナスでキーを変えるボタン」＝−6〜＋6
+        this.q('.lesson-keydown').onclick=()=>this.setKey(-1);
+        this.q('.lesson-keyup').onclick=()=>this.setKey(1);
+      }
       if(teacher) {
         const dialog=document.createElement('dialog');dialog.className='lesson-settings';dialog.setAttribute('aria-label','先生の設定');
         dialog.innerHTML='<div class="settings-head"><h2>先生の設定</h2><button class="settings-close">閉じる</button></div><div class="settings-sound"><div class="setting-line"><label for="lessonLead">区間の助走</label><select id="lessonLead"><option value="2">2小節前から</option><option value="1">1小節前から</option><option value="0">その小節から</option></select></div><div class="setting-line"><label for="lessonRight">右手の音量</label><input id="lessonRight" type="range" min="0" max="100"><output id="lessonRightVal"></output><label for="lessonLeft">左手の音量</label><input id="lessonLeft" type="range" min="0" max="100"><output id="lessonLeftVal"></output></div><div class="setting-line"><button class="lesson-share" type="button">この設定で、レッスン生用のURLをコピー</button><small class="lesson-share-msg"></small></div></div>';
@@ -100,6 +105,7 @@
         for(const [id,field] of [['lessonRight','rightVolume'],['lessonLeft','leftVolume']]){$(id).value=this.song[field];$(id+'Val').textContent=this.song[field];}
         for(const row of ['rhRow','lhRow']) $(row).querySelectorAll('[data-v="score"],[data-v="groove"]').forEach(el=>el.disabled=!this.song.scoreId);
       }
+      if(this.role!=='student'){const k=this.song.key||0;this.q('.lesson-keyval').textContent='キー '+(k>0?'+'+k:k<0?'−'+(-k):'±0');}
       this.q('.lesson-beats').replaceChildren(...Array.from({length:this.song.meter},()=>document.createElement('i')));
       this.lastSystem=null;this.lastBeat=null;this.drawPosition();this.updateButtons();
     }
@@ -128,6 +134,16 @@
       this.offset=0;this.startAt=Date.now()+700;this.status='playing';this.playClock=0;
       this.audio.setVolume($('localSound').checked?1:0);this.audio.start(this.plan,this.song,this.startAt,0,0);
       this.broadcast();this.updateButtons();this.lastSystem=null;
+    }
+    setKey(d) {
+      const next=Math.max(-6,Math.min(6,(this.song.key||0)+d));
+      if(next===this.song.key)return;
+      const was=this.status;if(was==='playing')this.pause();
+      const off=this.offset;
+      this.song.key=next;this.loadView();
+      if(this.role==='teacher'&&this.deps.api.patch)this.deps.api.patch({key:next}); // 先生の設定にも残す（同じ値なので changed() は止めない）
+      if(was!=='stopped'){this.offset=off;this.status='paused';if(was==='playing')this.resume();else{this.updateButtons();this.drawPosition();this.broadcast();}}
+      else this.broadcast();
     }
     beatNow() {return this.status==='playing'?this.offset+(Date.now()+(this.playClock||0)-this.startAt)/1000*this.song.bpm/60:this.offset;}
     pause() {
