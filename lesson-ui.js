@@ -23,7 +23,7 @@
       this.root=document.createElement('div');this.root.className='lesson';
       this.root.innerHTML=`<header class="lesson-head"><div><div class="lesson-brand">オンラインピアノ · ${teacher?'LESSON':practice?'PRACTICE':'SCORE'}</div><h1 class="lesson-title"></h1></div>${teacher?'<button class="lesson-open-settings">設定</button>':''}</header>
         <nav class="lesson-sections" aria-label="ここから再生"></nav>
-        ${ctl?'<div class="lesson-transport"><button class="main lesson-play">▶ はじめから</button><button class="lesson-pause" disabled>一時停止</button><button class="lesson-stop">停止</button><label><input type="checkbox" class="lesson-loop"> 区間をくり返す</label>'+(practice?'<label>速さ <select class="lesson-speed"><option value="100">100%</option><option value="90">90%</option><option value="80">80%</option><option value="70">70%</option><option value="60">60%</option></select></label>':'')+'<span class="lesson-meta"></span></div>':'<div class="student-controls"></div>'}
+        ${ctl?'<div class="lesson-transport"><button class="main lesson-play">▶ はじめから</button><button class="lesson-pause" disabled>一時停止</button><button class="lesson-stop">停止</button><label><input type="checkbox" class="lesson-loop"> 区間をくり返す</label>'+(practice?'<label>速さ <select class="lesson-speed"><option value="100">100%</option><option value="90">90%</option><option value="80">80%</option><option value="70">70%</option><option value="60">60%</option></select></label><label>メロディ <input type="range" class="lesson-rvol" min="0" max="100"></label><label>伴奏 <input type="range" class="lesson-lvol" min="0" max="100"></label>':'')+'<span class="lesson-meta"></span></div>':'<div class="student-controls"></div>'}
         <div class="lesson-now"><div class="lesson-position"><span class="lesson-section-name"></span><span><b class="lesson-bar">1</b> 小節</span></div><div class="lesson-chord"></div><div class="lesson-cue" role="status"></div><div class="lesson-beats" aria-label="拍"></div></div>
         <div class="score-stage" aria-label="再生中の譜面"></div>
         <div class="lesson-footer"><span class="lesson-mode"></span><span class="score-caption">元の譜面</span></div><div class="lesson-error" role="alert"></div>`;
@@ -57,6 +57,7 @@
         this.q('.lesson-pause').onclick=()=>this.pause();
         this.q('.lesson-stop').onclick=()=>this.stop(true);
         this.q('.lesson-loop').onchange=e=> {this.options.loop=e.target.checked;if(this.status==='playing')this.play(this.options.sectionId);};
+        for(const [cls,field] of [['.lesson-rvol','rightVolume'],['.lesson-lvol','leftVolume']]) this.q(cls).oninput=e=> {this.song[field]=+e.target.value;}; // 再生中も、これから鳴る音（約1秒先から）に効く
         this.q('.lesson-speed').onchange=e=> {this.stop(false);this.song.bpm=Math.round(this.baseBpm*+e.target.value/100);this.loadView();};
       } else {
         const controls=this.q('.student-controls');controls.append($('start'));
@@ -86,7 +87,7 @@
       }
       this.q('.lesson-mode').textContent=`右手 ${MODES[this.song.rh]}　／　左手 ${MODES[this.song.lh]}`;
       this.q('.score-caption').textContent=this.song.scoreId&&window.SHOW_SCORE_IMAGES?'元の譜面'+(this.song.key?' · 表示は元のキー':''):'コード譜';
-      if(this.role==='practice')this.q('.lesson-meta').textContent=`♩ ${this.song.bpm}`;
+      if(this.role==='practice'){this.q('.lesson-meta').textContent=`♩ ${this.song.bpm}`;this.q('.lesson-rvol').value=this.song.rightVolume;this.q('.lesson-lvol').value=this.song.leftVolume;}
       if(this.role==='teacher') {
         this.q('.lesson-meta').textContent=`♩ ${this.song.bpm}　キー ${this.song.key>0?'+':''}${this.song.key}　${this.song.leadBars}小節前から`;
         $('lessonLead').value=this.song.leadBars;
