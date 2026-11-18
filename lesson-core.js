@@ -41,7 +41,7 @@
         if (b-a <= EPS) return;
         const at=bar*song.meter+a-lo, prev=last.get(id);
         if (prev && Math.abs(prev[0]+prev[2]-at)<EPS && source === song.scoreMap[bar-1]+1) prev[2] += b-a;
-        else { const note=[at,n[1]+song.key,b-a,n[3],n[3]===1?.63:.7]; out.push(note); last.set(id,note); }
+        else { const note=[at,n[3]===0?n[1]:n[1]+song.key,b-a,n[3],n[3]===1?.63:n[3]===0?.5:.7]; out.push(note); last.set(id,note); } // 手の番号0＝譜面に置いたカウント（キーを変えても音の高さはそのまま）
       });
     });
     return out.sort((a,b)=>a[0]-b[0] || a[1]-b[1]);
@@ -61,6 +61,8 @@
   function notesForSong(song,score,parseChord) {
     const mapped = mappedNotes(song,score), out=[];
     const total = song.bars*song.meter;
+    // 2026-11-18 みかさん「11小節目にカンカンカンカンとカウントを」＝譜面に手の番号0で置いたカウントは、右手・左手の設定に関係なく鳴らす
+    out.push(...mapped.filter(n=>n[3]===0));
     for (const hand of [1,2]) {
       const mode=hand===1?song.rh:song.lh;
       if (mode==='off') continue;
