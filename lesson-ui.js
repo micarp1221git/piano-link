@@ -1,7 +1,7 @@
 (function() {
   'use strict';
   const $=id=>document.getElementById(id);
-  const MODES={score:'譜面どおり',groove:'この曲のリズム',q:'4分で刻む',back:'2・4拍目に和音',e:'8分で刻む',arp:'アルペジオ',hold:'コードを伸ばす',h:'2分で刻む',w:'1小節伸ばす',dot:'ターン・タ・ターン',off:'なし'};
+  const MODES={song:'歌に合わせる',kizami:'この曲の刻み',score:'譜面どおり',groove:'この曲のリズム',q:'4分で刻む',back:'2・4拍目に和音',e:'8分で刻む',arp:'アルペジオ',hold:'コードを伸ばす',h:'2分で刻む',w:'1小節伸ばす',dot:'ターン・タ・ターン',off:'なし'};
   class LessonPlayer {
     constructor(role,deps) {
       this.role=role;this.deps=deps;this.audio=new LessonAudio();this.clock=0;this.bestRTT=Infinity;
@@ -49,7 +49,8 @@
         dialog.querySelector('.lesson-share').onclick=()=> {
           const msg=dialog.querySelector('.lesson-share-msg'),url=this.deps.practiceUrl&&this.deps.practiceUrl(this.song);
           if(!url){msg.textContent='この曲は、まだレッスン生用のページがありません';return;}
-          (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>{msg.textContent='コピーしました';},()=>{msg.textContent=url;});
+          const tail=this.song.order.length?'（弾く順番も入っています）':'';
+          (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>{msg.textContent='コピーしました'+tail;},()=>{msg.textContent=url;});
         };
         this.q('.lesson-open-settings').onclick=()=>{dialog.showModal();$('tabAcc').click();this.deps.api.redraw();};
         dialog.addEventListener('close',()=>this.q('.lesson-open-settings').focus());

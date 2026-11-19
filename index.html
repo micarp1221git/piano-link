@@ -204,13 +204,16 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
 
     <p class="sublabel">弾く順番（区切りを押すと後ろに足せます・空なら頭から最後まで）</p>
     <div class="row" id="orderAdd"></div>
+    <div class="row" style="margin-top:8px"><label for="playUntil" class="label" style="margin:0">どこまで弾くか（1コーラスだけ、など）</label><select id="playUntil"></select></div>
     <div class="row" id="orderList" style="margin-top:8px"></div>
 
     <div id="accompanimentSettings"><p class="sublabel">弾き方</p>
-    <div class="row" id="rhRow"><span class="label" style="margin:0">右手</span><button data-v="score">譜面どおり</button><button data-v="off">なし</button>
+    <div class="row" id="rhRow"><span class="label" style="margin:0">右手</span><button data-v="song">歌に合わせる</button><button data-v="score">譜面どおり</button><button data-v="off">なし</button>
       <button data-v="q">4分で刻む</button><button data-v="e">8分で刻む</button><button data-v="arp">アルペジオ</button><button data-v="hold">伸ばす</button>
     </div>
-    <div class="row" id="lhRow" style="margin-top:8px"><span class="label" style="margin:0">左手</span><button data-v="groove">この曲のリズム</button><button data-v="score">譜面どおり</button><button data-v="e">8分</button><button data-v="arp">アルペジオ</button><button data-v="off">なし</button>
+    <div class="row" id="vocalRhRow" style="margin-top:8px"><span class="label" style="margin:0">歌うところの右手</span><button data-v="comp">コードを刻む</button><button data-v="guide">刻み＋ガイドメロディー</button><button data-v="soft">メロディーを小さく</button><button data-v="off">お休み</button></div>
+    <div class="row" id="swingRow" style="margin-top:8px"><span class="label" style="margin:0">はね具合</span><button data-v="straight">はねない</button><button data-v="light">軽くはねる</button><button data-v="hard">強くはねる</button></div>
+    <div class="row" id="lhRow" style="margin-top:8px"><span class="label" style="margin:0">左手</span><button data-v="kizami">この曲の刻み</button><button data-v="groove">この曲のリズム</button><button data-v="score">譜面どおり</button><button data-v="e">8分</button><button data-v="arp">アルペジオ</button><button data-v="off">なし</button>
       <button data-v="q">4分</button><button data-v="back">2・4拍目に和音</button><button data-v="h">2分</button><button data-v="w">全音符</button><button data-v="dot">ターーン・タ・ターーン</button>
     </div>
     <div class="row" id="sMeterRow" style="margin-top:8px"><span class="label" style="margin:0">拍子</span>
@@ -276,12 +279,13 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="lesson-data.js?v=20261118g"></script>
-<script src="lesson-data-merry.js?v=20261118g"></script>
-<script src="lesson-data-overdrive.js?v=20261118g"></script>
-<script src="lesson-core.js?v=20261118g"></script>
-<script src="lesson-audio.js?v=20261118g"></script>
-<script src="lesson-ui.js?v=20261118g"></script>
+<script src="lesson-data.js?v=20261119a"></script>
+<script src="lesson-data-merry.js?v=20261119a"></script>
+<script src="lesson-data-overdrive.js?v=20261119a"></script>
+<script src="lesson-data-timegoesby.js?v=20261119a"></script>
+<script src="lesson-core.js?v=20261119a"></script>
+<script src="lesson-audio.js?v=20261119a"></script>
+<script src="lesson-ui.js?v=20261119a"></script>
 <script>
 "use strict";
 const PREFIX = "mika-piano-";
@@ -458,7 +462,13 @@ function cleanSong(o) {
     chords.push(ly ? { bar, beat, sym, lyric: ly } : { bar, beat, sym });
   });
   chords.sort((a, b) => a.bar - b.bar || a.beat - b.beat);
-  const sections = (Array.isArray(o.sections) ? o.sections : []).slice(0, 20).map(x => x && ({ id: String(x.id || rid()).slice(0, 20), name: String(x.name || "").slice(0, 12), start: clampN(x.start, 0, bars - 1, 0), end: clampN(x.end, 0, bars - 1, 0) })).filter(x => x && x.name && x.end >= x.start);
+  const sections = (Array.isArray(o.sections) ? o.sections : []).slice(0, 20).map(x => {
+    if (!x) return null;
+    const name = String(x.name || "").slice(0, 12);
+    // 歌あり・なしは区切りの名前から（イントロ・間奏・アウトロは歌なし＝「歌に合わせる」右手がメロディーを弾く）
+    const sing = typeof x.sing === "boolean" ? x.sing : !/イントロ|間奏|アウトロ|エンディング|intro|outro/i.test(name);
+    return { id: String(x.id || rid()).slice(0, 20), name, start: clampN(x.start, 0, bars - 1, 0), end: clampN(x.end, 0, bars - 1, 0), sing };
+  }).filter(x => x && x.name && x.end >= x.start);
   const ids = new Set(sections.map(x => x.id));
   const order = (Array.isArray(o.order) ? o.order : []).map(String).filter(id => ids.has(id)).slice(0, 64);
   return {
@@ -532,6 +542,14 @@ const OD_PRESET = presetFromText({ name: "OverDrive（コード譜）", meter: 4
 const OD_LESSON = { ...OD_PRESET, name: "OverDrive（レッスン版）", scoreId: "overdrive-v1",
   rh: "score", lh: "score", countIn: false, leadBars: 2, order: [] };
 PRESETS.push(OD_LESSON, OD_PRESET); // preset:5 / preset:6
+// 2026-11-19 みかさん「（公開の版に）いつかのメリークリスマスが見当たりません・廊下を走るなもないぞ」「ワンコーラスだけを生徒さんに伝えたい」
+//   → このMacの中だけの版にあった TimeGoesBy を公開の版へ。音は楽譜変換ソフトのMIDI＋PDF（Vault 06_Projects/オンラインピアノ/20261109_レッスン版/build_score_timegoesby.py）。譜面の画像は載せない
+//   17〜20小節目はイントロと同じ節（Wow wow のところ）なので「Aメロ」と呼ばない。右手は「歌に合わせる」＋ガイドメロディー（メロディーはっきり・和音は2拍ごとに小さく）
+const TGB_PRESET = presetFromText(
+  { name: "TimeGoesBy（コード譜）", meter: 4, bpm: 84, key: 0, rh: "arp", lh: "w", text: "[イントロ] | Db - Eb - | Fm | Db - Eb - | Fm | Db - Eb - | Fm | Db - Eb - | Fm |\n[Aメロ1] | Db - Eb - | Fm | Db - Eb - | Cm7 - Fm - | Db - Eb - | Fm | Db - Eb - | Fm |\n[Wow wow] | Db - Eb - | Fm | Db - Eb - | Fm |\n[Aメロ2] | Db - Eb - | Fm | Db - Eb - | Cm7 - Fm - | Db - Eb - | Fm | Db - Eb - | Fm |\n[Bメロ1] | Bbm7 | Cm7 | Dbmaj7 - Eb - | Fsus4 - Fm - | Bbm7 | Cm7 | Dbmaj7 - Eb - | Csus4 C - - |\n[サビ1] | Db - Eb - | Ab - C/G - | Db - Eb - | Ab - C/G - | Fm - Dbm/E - | Ab/Eb - Bb/D - | Bbm7 - Cm7 - | Fsus4 - F - |\n[間奏] | Db - Eb - | Fm | Db - Eb - | Fm |\n[Aメロ3] | Db - Eb - | Fm | Db - Eb - | Cm7 - Fm - | Db - Eb - | Fm | Db - Eb - | Fm |\n[Bメロ2] | Bbm7 | Cm7 | Dbmaj7 - Eb - | Fsus4 - Fm - | Bbm7 | Cm7 | Dbmaj7 - Eb - | Csus4 C - - |\n[サビ2] | Db - Eb - | Ab - C/G - | Db - Eb - | Ab - C7/G - | Db/F - Dbm/E - | Ab/Eb - Dm7 - | Bbm7 - Cm7 - | Fsus4 - - F |\n[Cメロ] | B | - - Db/B Gb/Bb | Abm7 | - | Db - B Gb/Bb | Gb E B - |\n[間奏2] | A | - | F#m | - | D | - | - - G - | E - A - |\n[大サビ] | D - E - | A - C#/G# - | D - E - | A - C#/G# - | D/F# - Dm/F - | A/E - D#m7 - | Bm7 - C#m7 - | F#sus4 - F# - |\n[ラストサビ] | D - E - | F#m | D - E - | F#m | D - E - | F#m | D - E - | F#m | D - E - | F#m | D - E - | - |\n[アウトロ] | F#m | - | - |" });
+const TGB_LESSON = { ...TGB_PRESET, name: "TimeGoesBy（レッスン版）", scoreId: "timegoesby-v1",
+  rh: "song", lh: "kizami", vocalRh: "guide", swing: "straight", countIn: false, leadBars: 2, order: [] };
+PRESETS.push(TGB_LESSON, TGB_PRESET); // preset:7 / preset:8
 
 // ---- 伴奏：音の並びを作る（先生・生徒の両方で同じ計算） ----
 // 拍は4分音符=1。barOffs は小節の中で音を出す位置
@@ -773,7 +791,9 @@ function setupAcc(send) {
     PRESETS.slice(0,2).forEach((p,i)=>add("preset:"+i,p.name));
     add("preset:4", MERRY_PRESET.name);
     add("preset:5", OD_LESSON.name);
+    add("preset:7", TGB_LESSON.name);
     add("preset:6", OD_PRESET.name);
+    add("preset:8", TGB_PRESET.name);
     add("", SAMPLE.name);
     Object.keys(savedSongs()).sort().forEach(n => add(n, n));
     l.value = sel != null && [...l.options].some(o => o.value === sel) ? sel : Object.hasOwn(savedSongs(),song.name) ? song.name : "preset:"+Math.max(0,PRESETS.findIndex(p=>p.name===song.name));
@@ -1046,6 +1066,14 @@ function setupAcc(send) {
     drawSuggest();
   }
   function drawOrder(nowIdx) {
+    // 2026-11-19 みかさん「ワンコーラスだけのやつを作れるようにしておいて」＝頭から選んだ区切りの終わりまで弾いて止まる（弾く順番を頭からそこまでにする）
+    { const pu = $("playUntil"), secs = song.sections.slice().sort((a, b) => a.start - b.start); pu.innerHTML = "";
+      const opt = (v, t) => { const o = document.createElement("option"); o.value = v; o.textContent = t; pu.appendChild(o); };
+      opt("", "最後まで"); secs.forEach((x, i) => opt(String(i), x.name + " の終わりまで"));
+      const pre = song.order.length && song.order.length <= secs.length && song.order.every((id, i) => secs[i].id === id);
+      if (song.order.length && !pre) opt("x", "（下の順番どおり）");
+      pu.value = !song.order.length ? "" : pre ? String(song.order.length - 1) : "x";
+      pu.onchange = () => { if (pu.value === "x") return; song.order = pu.value === "" ? [] : secs.slice(0, +pu.value + 1).map(x => x.id); changed(); }; }
     const ol = $("orderList"); ol.innerHTML = "";
     song.order.forEach((id, i) => {
       const x = song.sections.find(y => y.id === id); if (!x) return;
@@ -1116,6 +1144,10 @@ function setupAcc(send) {
     return () => row.querySelectorAll("button").forEach(b => {const selected=b.dataset.v===String(get());b.classList.toggle("sel",selected);b.setAttribute("aria-pressed",String(selected));});
   };
   const drawRh = pickRow("rhRow", () => song.rh, v => song.rh = v);
+  const drawVocalRhButtons = pickRow("vocalRhRow", () => song.vocalRh, v => song.vocalRh = v);
+  const drawVocalRh = () => { $("vocalRhRow").style.display = song.rh === "song" ? "" : "none"; drawVocalRhButtons(); };
+  const drawSwingButtons = pickRow("swingRow", () => song.swing, v => song.swing = v);
+  const drawSwing = () => { $("swingRow").style.display = song.rh === "song" || song.lh === "kizami" ? "" : "none"; drawSwingButtons(); };
   const drawLh = pickRow("lhRow", () => song.lh, v => song.lh = v);
   const drawMeter = pickRow("sMeterRow", () => song.meter, v => {
     const m = +v; if (m === song.meter) return;
@@ -1181,7 +1213,7 @@ function setupAcc(send) {
     bpm.value = song.bpm; $("sBpmVal").textContent = song.bpm;
     $("countIn").checked = song.countIn;
     $("click").checked = !!song.click;
-    drawKey(); drawRh(); drawLh(); drawMeter(); drawSecNames();
+    drawKey(); drawRh(); drawVocalRh(); drawLh(); drawSwing(); drawMeter(); drawSecNames();
     $("secFrom").max = $("secTo").max = song.bars;
     if (!$("editor").classList.contains("hide") && !editing) $("editor").classList.add("hide");
     drawGrid(); drawSections();
@@ -1222,14 +1254,19 @@ function student(code) {
 // ---- ひとりで練習（?practice=overdrive）----
 // 2026-11-18 みかさん「このOverDriveを実際のレッスン生がパソコンだかスマホだかで開けるようにしておいて」
 const params = new URLSearchParams(location.search);
-const PRACTICE_SONGS = { overdrive: OD_LESSON };
+const PRACTICE_SONGS = { overdrive: OD_LESSON, timegoesby: TGB_LESSON, merry: MERRY_LESSON, tsutsumi: LESSON_PRESET };
 // 先生の今の設定をURLに入れる（r=メロディの音量・l=伴奏の音量・bpm・key・rh・lh）。開いた側は cleanSong で範囲を確かめてから使う
-const PRACTICE_FIELDS = { r: "rightVolume", l: "leftVolume", bpm: "bpm", key: "key", rh: "rh", lh: "lh" };
+const PRACTICE_FIELDS = { r: "rightVolume", l: "leftVolume", bpm: "bpm", key: "key", rh: "rh", lh: "lh", vr: "vocalRh", sw: "swing" };
+const PRACTICE_TEXT = ["rh", "lh", "vr", "sw"];
 function practiceUrl(song) {
   const key = Object.keys(PRACTICE_SONGS).find(k => PRACTICE_SONGS[k].scoreId && PRACTICE_SONGS[k].scoreId === song.scoreId);
   if (!key) return null;
   const q = new URLSearchParams({ practice: key });
   for (const [k, f] of Object.entries(PRACTICE_FIELDS)) if (song[f] !== undefined) q.set(k, song[f]);
+  // 2026-11-19 みかさん「ワンコーラスだけを生徒さんに伝えたい」＝弾く順番（区切りの番号・頭から数えて0始まり）もURLに入れる
+  const secs = song.sections.slice().sort((a, b) => a.start - b.start);
+  const idx = song.order.map(id => secs.findIndex(x => x.id === id));
+  if (idx.length && idx.every(i => i >= 0) && secs.length === PRACTICE_SONGS[key].sections.length) q.set("ord", idx.join("."));
   return location.origin + location.pathname + "?" + q.toString();
 }
 function practice(key) {
@@ -1237,7 +1274,13 @@ function practice(key) {
   if (!preset) return false;
   document.getElementById("practice").classList.remove("hide");
   const over = {};
-  for (const [k, f] of Object.entries(PRACTICE_FIELDS)) { const v = params.get(k); if (v !== null && v !== "") over[f] = ["rh", "lh"].includes(k) ? v : +v; }
+  for (const [k, f] of Object.entries(PRACTICE_FIELDS)) { const v = params.get(k); if (v !== null && v !== "") over[f] = PRACTICE_TEXT.includes(k) ? v : +v; }
+  const ord = (params.get("ord") || "").split(".").filter(x => /^\d{1,2}$/.test(x)).slice(0, 64).map(Number);
+  if (ord.length) { const secs = preset.sections.slice().sort((a, b) => a.start - b.start); if (ord.every(i => i < secs.length)) {
+      // 頭から続きの順番（1コーラスなど）なら、曲そのものをそこで終わりにする＝その先の区切りのボタンも出さない。それ以外の順番はそのまま渡す
+      if (ord.every((v, i) => v === i)) { const last = secs[ord.length - 1]; over.bars = last.end + 1; over.sections = secs.slice(0, ord.length); over.chords = preset.chords.filter(c => c.bar <= last.end); over.order = []; if (ord.length < secs.length) over.name = (preset.name.replace(/（レッスン版）$/, "") + "（" + last.name + "まで）").slice(0, 40); }
+      else over.order = ord.map(i => secs[i].id);
+    } }
   const song = cleanSong(Object.assign({}, preset, over)) || cleanSong(preset);
   const lesson = new LessonPlayer("practice", {api:{getSong:()=>song,patch:()=>{},redraw:()=>{}},cleanSong,parseChord,transposeSym,send:()=>{},stopLegacy:()=>{}});
   window.lessonPlayer = lesson;

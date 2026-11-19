@@ -6,8 +6,8 @@
 })(typeof window !== 'undefined' ? window : this, function() {
   'use strict';
   const EPS = 1e-7;
-  const RH = ['score','q','e','arp','hold','off'];
-  const LH = ['score','groove','q','back','e','arp','h','w','dot','off'];
+  const RH = ['song','score','q','e','arp','hold','off'];
+  const LH = ['kizami','score','groove','q','back','e','arp','h','w','dot','off'];
   // 2026-11-17 みかさん「1拍目に低い音があるとアクセントが来る。裏でとるリズムは2拍目と4拍目」→ back＝1・3拍目に小さめの低音、2・4拍目に和音
   const isBack = (x,meter) => meter===4 ? x%2===1 : x>0;
   function fields(o, bars, meter) {
@@ -22,14 +22,43 @@
         const v = Array.isArray(o.scoreMap) ? o.scoreMap[i] : i;
         return Number.isInteger(v) && v >= 0 && v < max ? v : -1;
       }) : [],
-      rh: RH.includes(o.rh) && (attached || o.rh !== 'score') ? o.rh : 'q',
-      lh: LH.includes(o.lh) && (attached || !['score','groove'].includes(o.lh)) ? o.lh : 'q',
+      rh: RH.includes(o.rh) && (attached || !['score','song'].includes(o.rh)) ? o.rh : 'q',
+      lh: LH.includes(o.lh) && (attached || !['score','groove','kizami'].includes(o.lh)) ? o.lh : 'q',
+      // 2026-11-19 このMacの中だけの版（Vault 20261109_レッスン版）から移した: 歌に合わせる右手・この曲の刻み・はね具合
+      vocalRh: ['comp','guide','soft','off'].includes(o.vocalRh) ? o.vocalRh : 'comp',
+      swing: ['straight','light','hard'].includes(o.swing) ? o.swing : 'light',
       leadBars: [0,1,2].includes(+o.leadBars) ? +o.leadBars : 2,
       click: o.click === true, // 2026-11-17 みかさん「クリックオンもあるといいな」＝曲の間ずっと拍ごとに鳴らす
       rightVolume: Number.isFinite(+o.rightVolume) ? Math.max(0,Math.min(100,+o.rightVolume)) : 75,
       leftVolume: Number.isFinite(+o.leftVolume) ? Math.max(0,Math.min(100,+o.leftVolume)) : 75
     };
   }
+  // A bar is "singing" unless its section is marked sing:false (イントロ・間奏・アウトロなど).
+  function singAt(song, bar) {
+    const s = song.sections.find(s => bar >= s.start && bar <= s.end);
+    return s ? s.sing !== false : true;
+  }
+  // 「この曲の刻み」= 楽譜冒頭の「リズム型」1小節ぶん(16分グリッド)。はね具合は3段階。
+  // 刻みは曲ごとに違うので、譜面データ(score.kizami)が持っていればそれを使い、無ければ下の既定(つつみ込むように…)。
+  // パターンの各音は [位置, 長さ, 度数?]。度数: なし/'r'=ベース音 '5'=5度 '10'=10度(3度+オクターブ)。
+  // 拍の終わり際(off%1 > .7)の音は、次の拍のコードを先取りして鳴らす。
+  // つつみ込むように…の下段: 4分 → 3拍目の直前に16分の先取り →「ド・ドゥン」→ 8分 → 次の小節の頭への先取り。
+  // 上段: 8分の刻みと、2・4拍目の後ろの「タカ」。
+  // straight=楽譜どおりの16分 / light=16分の裏を3連の位置へ / hard=8分の裏も付点の位置へ。
+  const KIZAMI = {
+    straight: {
+      bass:  [[0,1],[1.75,.25],[2,.5],[2.5,.5],[3.75,.25]],
+      chord: [[0,.5],[.5,.5],[1,.5],[1.5,.25],[1.75,.25],[2,.5],[2.5,.5],[3,.5],[3.5,.25],[3.75,.25]]
+    },
+    light: {
+      bass:  [[0,1],[1+5/6,1/6],[2,.5],[2.5,.5],[3+5/6,1/6]],
+      chord: [[0,.5],[.5,.5],[1,.5],[1.5,1/3],[1+5/6,1/6],[2,.5],[2.5,.5],[3,.5],[3.5,1/3],[3+5/6,1/6]]
+    },
+    hard: {
+      bass:  [[0,1],[1.75,.25],[2,.5],[2.75,.25],[3.75,.25]],
+      chord: [[0,.7],[.75,.25],[1,.5],[1.5,.25],[1.75,.25],[2,.7],[2.75,.25],[3,.5],[3.5,.25],[3.75,.25]]
+    }
+  };
   function mappedNotes(song, score) {
     if (song.scoreId !== score?.id || song.meter !== score.meter) return [];
     const out = [], last = new Map();
@@ -58,15 +87,70 @@
     if (mode==='dot') return [0,1.5,2].filter(x=>x<meter);
     return [0];
   }
+  // パターンの度数('r'/'5'/'10')をそのコードの半音数に直す。5度・10度がコードに無い形(sus4・分数コード)は中の音から選ぶ。
+  function degreeAdd(ch, deg) {
+    if (!deg || deg === 'r') return 0;
+    const base = ch.bass ?? ch.root;
+    const tones = new Set(ch.iv.map(iv => (ch.root + iv) % 12));
+    if (deg === '5') {
+      if (tones.has((base + 7) % 12)) return 7;
+      for (let t = 5; t <= 11; t++) if (tones.has((base + t) % 12)) return t;
+      return 7;
+    }
+    if (deg === '10') {
+      if (ch.bass != null && ch.bass !== ch.root) return 12;
+      return 12 + (ch.iv.includes(4) ? 4 : ch.iv.includes(3) ? 3 : ch.iv.includes(5) ? 5 : 7);
+    }
+    return 0;
+  }
   function notesForSong(song,score,parseChord) {
     const mapped = mappedNotes(song,score), out=[];
     const total = song.bars*song.meter;
     // 2026-11-18 みかさん「11小節目にカンカンカンカンとカウントを」＝譜面に手の番号0で置いたカウントは、右手・左手の設定に関係なく鳴らす
     out.push(...mapped.filter(n=>n[3]===0));
+    const KZBook = (score && score.id === song.scoreId && score.kizami) || KIZAMI;
+    const KZ = KZBook[song.swing] || KZBook.light || KIZAMI.light;
+    const grooveBars = (pattern, onNote) => {
+      for (let bar=0; bar<song.bars; bar++) for (const [off,dur,deg] of pattern) {
+        const p=bar*song.meter+off, ahead=off%1>.7;
+        const c=chordAt(song, ahead ? Math.floor(p)+1 : p), ch=c&&parseChord(c.sym);
+        if (ch && !ch.rest && p+EPS < total) onNote(bar,p,Math.min(dur,total-p),ch,ahead,deg);
+      }
+    };
     for (const hand of [1,2]) {
       const mode=hand===1?song.rh:song.lh;
       if (mode==='off') continue;
       if (mode==='score') { out.push(...mapped.filter(n=>n[3]===hand)); continue; }
+      if (mode==='song') {
+        // Melody only where nobody sings; while singing, chord comping / comping+guide melody / quiet melody / rest.
+        for (const n of mapped) {
+          if (n[3]!==1) continue;
+          const vocal = singAt(song, Math.floor(n[0]/song.meter));
+          if (!vocal) out.push(n);
+          else if (song.vocalRh==='soft') out.push([n[0],n[1],n[2],1,n[4]*.42]);
+          // 2026-11-19 みかさん「メロディが聞こえにくかった」→ ガイドメロディーは譜面より少し強く（1.3倍・左手の刻みより前に出る）
+          else if (song.vocalRh==='guide') out.push([n[0],n[1],n[2],1,Math.min(1,n[4]*1.3)]);
+        }
+        if (song.vocalRh==='comp') grooveBars(KZ.chord, (bar,p,dur,ch,ahead) => {
+          if (!singAt(song,bar)) return;
+          [...new Set(ch.iv.map(iv=>60+(ch.root+iv)%12))].forEach(m=>out.push([p,m+song.key,dur*.9,1,ahead?.34:.42]));
+        });
+        // 2026-11-19 みかさん「歌を歌っているところは、右手で細かく弾くのは控えめに」→ ガイドメロディーのときの和音は、細かい刻みをやめて2拍ごとに小さく伸ばす（メロディーより下の高さ）
+        if (song.vocalRh==='guide') for (let bar=0; bar<song.bars; bar++) {
+          if (!singAt(song,bar)) continue;
+          for (let off=0; off<song.meter; off+=2) {
+            const p=bar*song.meter+off, c=chordAt(song,p), ch=c&&parseChord(c.sym);
+            if (!ch || ch.rest || p+EPS>=total) continue;
+            const dur=Math.min(2,song.meter-off,total-p);
+            [...new Set(ch.iv.map(iv=>48+(ch.root+iv)%12))].forEach(m=>out.push([p,m+song.key,dur*.95,1,.22]));
+          }
+        }
+        continue;
+      }
+      if (mode==='kizami') {
+        grooveBars(KZ.bass, (bar,p,dur,ch,ahead,deg) => out.push([p,36+(ch.bass??ch.root)+degreeAdd(ch,deg)+song.key,dur*.95,hand,ahead?.62:.75]));
+        continue;
+      }
       if (mode==='groove') {
         // Lowest LH attack at each onset carries the original bass rhythm/rests.
         const attacks=new Map();
@@ -156,5 +240,5 @@
       remaining:Math.max(0,Math.ceil((plan.targetAt-b)/plan.meter)),done:!plan.loopLength&&beat>=plan.total};
   }
   function clockOffset(sent,received,server) {return server-(sent+received)/2;}
-  return {fields,mappedNotes,chordAt,notesForSong,compile,position,clockOffset,RH,LH};
+  return {fields,mappedNotes,chordAt,notesForSong,compile,position,clockOffset,singAt,degreeAdd,KIZAMI,RH,LH};
 });
