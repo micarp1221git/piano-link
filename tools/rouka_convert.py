@@ -128,6 +128,13 @@ notes = pickup + [[round(n[0] + METER, 4), n[1], n[2], n[3]] for n in riff2 + [n
 chords = [(t + METER, sym, b) for t, sym, b in chords]; marks = [(t + METER, m) for t, m in marks]
 bar_map = [(b, t + METER, L) for b, t, L in bar_map]
 t0 += METER
+# 8) Aメロ1の「| Ab Gb |」の小節（7・11小節目）の歌の節（2026-11-19 みかさん「7と11小節目も右手メロディーが少し気になる。ちょっと違う」）
+#    音源の歌の高さを細かく見ると、ド は2拍目の少し前から短く、シ♭ は2拍目ウラから、ラ♭ は3拍目ウラから。耳コピ譜は ド が16分早く、シ♭ が1つ多かった
+for bar in (7, 11):
+    b0 = (bar - 1) * METER
+    notes = [n for n in notes if not (n[3] == 1 and b0 + 0.5 - 1e-9 <= n[0] < b0 + METER - 1e-9)]
+    notes += [[b0 + 0.75, 72, 0.5, 1], [b0 + 1.5, 70, 0.5, 1], [b0 + 2.0, 70, 0.5, 1], [b0 + 2.5, 68, 1.25, 1]]
+notes.sort(key=lambda n: (n[0], n[1]))
 total = t0; bars = int(round(total / METER))
 assert abs(total - bars * METER) < 1e-6, total
 notes.sort(key=lambda n: (n[0], n[1]))
