@@ -28,6 +28,8 @@
       vocalRh: ['comp','guide','soft','off'].includes(o.vocalRh) ? o.vocalRh : 'comp',
       swing: ['straight','light','hard'].includes(o.swing) ? o.swing : 'light',
       leadBars: [0,1,2].includes(+o.leadBars) ? +o.leadBars : 2,
+      // 2026-11-19 みかさん「サビまでで終わるのはいいけど、次の間奏の頭の1、2小節は流しておいてほしい」＝弾く順番の最後のあと、続きを何小節か足して止まる
+      tailBars: [0,1,2,4].includes(+o.tailBars) ? +o.tailBars : 0,
       click: o.click === true, // 2026-11-17 みかさん「クリックオンもあるといいな」＝曲の間ずっと拍ごとに鳴らす
       rightVolume: Number.isFinite(+o.rightVolume) ? Math.max(0,Math.min(100,+o.rightVolume)) : 75,
       leftVolume: Number.isFinite(+o.leftVolume) ? Math.max(0,Math.min(100,+o.leftVolume)) : 75
@@ -204,6 +206,7 @@
     else {
       ranges=song.order.map(id=>song.sections.find(s=>s.id===id)).filter(Boolean);
       if(!ranges.length) ranges=[{start:0,end:song.bars-1}];
+      else if(song.tailBars) { const last=ranges.at(-1); ranges=[...ranges.slice(0,-1),{start:last.start,end:Math.min(song.bars-1,last.end+song.tailBars)}]; }
     }
     // Coalesce adjacent ranges, preserving ties across section boundaries.
     const merged=[];

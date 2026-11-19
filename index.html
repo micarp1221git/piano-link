@@ -204,7 +204,7 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
 
     <p class="sublabel">弾く順番（区切りを押すと後ろに足せます・空なら頭から最後まで）</p>
     <div class="row" id="orderAdd"></div>
-    <div class="row" style="margin-top:8px"><label for="playUntil" class="label" style="margin:0">どこまで弾くか（1コーラスだけ、など）</label><select id="playUntil"></select></div>
+    <div class="row" style="margin-top:8px"><label for="playUntil" class="label" style="margin:0">どこまで弾くか（1コーラスだけ、など）</label><select id="playUntil"></select><label for="tailBars" class="label" style="margin:0">そのあと</label><select id="tailBars"><option value="0">すぐ止まる</option><option value="1">次の1小節も流す</option><option value="2">次の2小節も流す</option><option value="4">次の4小節も流す</option></select></div>
     <div class="row" id="orderList" style="margin-top:8px"></div>
 
     <div id="accompanimentSettings"><p class="sublabel">弾き方</p>
@@ -279,13 +279,13 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="lesson-data.js?v=20261119a"></script>
-<script src="lesson-data-merry.js?v=20261119a"></script>
-<script src="lesson-data-overdrive.js?v=20261119a"></script>
-<script src="lesson-data-timegoesby.js?v=20261119a"></script>
-<script src="lesson-core.js?v=20261119a"></script>
-<script src="lesson-audio.js?v=20261119a"></script>
-<script src="lesson-ui.js?v=20261119a"></script>
+<script src="lesson-data.js?v=20261119b"></script>
+<script src="lesson-data-merry.js?v=20261119b"></script>
+<script src="lesson-data-overdrive.js?v=20261119b"></script>
+<script src="lesson-data-timegoesby.js?v=20261119b"></script>
+<script src="lesson-core.js?v=20261119b"></script>
+<script src="lesson-audio.js?v=20261119b"></script>
+<script src="lesson-ui.js?v=20261119b"></script>
 <script>
 "use strict";
 const PREFIX = "mika-piano-";
@@ -1073,6 +1073,7 @@ function setupAcc(send) {
       const pre = song.order.length && song.order.length <= secs.length && song.order.every((id, i) => secs[i].id === id);
       if (song.order.length && !pre) opt("x", "（下の順番どおり）");
       pu.value = !song.order.length ? "" : pre ? String(song.order.length - 1) : "x";
+      const tb = $("tailBars"); tb.value = String(song.tailBars || 0); tb.onchange = () => { song.tailBars = +tb.value; changed(); };
       pu.onchange = () => { if (pu.value === "x") return; song.order = pu.value === "" ? [] : secs.slice(0, +pu.value + 1).map(x => x.id); changed(); }; }
     const ol = $("orderList"); ol.innerHTML = "";
     song.order.forEach((id, i) => {
@@ -1256,7 +1257,7 @@ function student(code) {
 const params = new URLSearchParams(location.search);
 const PRACTICE_SONGS = { overdrive: OD_LESSON, timegoesby: TGB_LESSON, merry: MERRY_LESSON, tsutsumi: LESSON_PRESET };
 // 先生の今の設定をURLに入れる（r=メロディの音量・l=伴奏の音量・bpm・key・rh・lh）。開いた側は cleanSong で範囲を確かめてから使う
-const PRACTICE_FIELDS = { r: "rightVolume", l: "leftVolume", bpm: "bpm", key: "key", rh: "rh", lh: "lh", vr: "vocalRh", sw: "swing" };
+const PRACTICE_FIELDS = { r: "rightVolume", l: "leftVolume", bpm: "bpm", key: "key", rh: "rh", lh: "lh", vr: "vocalRh", sw: "swing", tail: "tailBars" };
 const PRACTICE_TEXT = ["rh", "lh", "vr", "sw"];
 function practiceUrl(song) {
   const key = Object.keys(PRACTICE_SONGS).find(k => PRACTICE_SONGS[k].scoreId && PRACTICE_SONGS[k].scoreId === song.scoreId);
@@ -1278,7 +1279,7 @@ function practice(key) {
   const ord = (params.get("ord") || "").split(".").filter(x => /^\d{1,2}$/.test(x)).slice(0, 64).map(Number);
   if (ord.length) { const secs = preset.sections.slice().sort((a, b) => a.start - b.start); if (ord.every(i => i < secs.length)) {
       // 頭から続きの順番（1コーラスなど）なら、曲そのものをそこで終わりにする＝その先の区切りのボタンも出さない。それ以外の順番はそのまま渡す
-      if (ord.every((v, i) => v === i)) { const last = secs[ord.length - 1]; over.bars = last.end + 1; over.sections = secs.slice(0, ord.length); over.chords = preset.chords.filter(c => c.bar <= last.end); over.order = []; if (ord.length < secs.length) over.name = (preset.name.replace(/（レッスン版）$/, "") + "（" + last.name + "まで）").slice(0, 40); }
+      if (ord.every((v, i) => v === i)) { const last = secs[ord.length - 1]; const tail = Math.min([0,1,2,4].includes(over.tailBars) ? over.tailBars : 0, preset.bars - 1 - last.end), next = secs[ord.length]; over.tailBars = 0; over.bars = last.end + 1 + tail; over.sections = secs.slice(0, ord.length).concat(tail && next ? [{ ...next, end: last.end + tail }] : []); over.chords = preset.chords.filter(c => c.bar <= last.end + tail); over.order = []; if (ord.length < secs.length) over.name = (preset.name.replace(/（レッスン版）$/, "") + "（" + last.name + "まで）").slice(0, 40); }
       else over.order = ord.map(i => secs[i].id);
     } }
   const song = cleanSong(Object.assign({}, preset, over)) || cleanSong(preset);
