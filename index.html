@@ -279,13 +279,14 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="lesson-data.js?v=20261119b"></script>
-<script src="lesson-data-merry.js?v=20261119b"></script>
-<script src="lesson-data-overdrive.js?v=20261119b"></script>
-<script src="lesson-data-timegoesby.js?v=20261119b"></script>
-<script src="lesson-core.js?v=20261119b"></script>
-<script src="lesson-audio.js?v=20261119b"></script>
-<script src="lesson-ui.js?v=20261119b"></script>
+<script src="lesson-data.js?v=20261119c"></script>
+<script src="lesson-data-merry.js?v=20261119c"></script>
+<script src="lesson-data-overdrive.js?v=20261119c"></script>
+<script src="lesson-data-timegoesby.js?v=20261119c"></script>
+<script src="lesson-data-rouka.js?v=20261119c"></script>
+<script src="lesson-core.js?v=20261119c"></script>
+<script src="lesson-audio.js?v=20261119c"></script>
+<script src="lesson-ui.js?v=20261119c"></script>
 <script>
 "use strict";
 const PREFIX = "mika-piano-";
@@ -523,7 +524,8 @@ PRESETS.push(LESSON_PRESET);
 //   みかさんが聞いた形を正にした: A は8小節（Cmaj7で終わる）、B は9〜12小節目の4小節 | Cmaj7 | Bm7 | Am7 D（2拍ずつ）| Gmaj7 | → そのあとAメロ（C）。
 //   ※譜面の音を合わせるほど変になった（右手が空・低い音と和音が1小節ずれ）。B の音は4分の和音＋左手の根音で作り直した
 // コードは譜面の表記どおり・区切りの A〜P は譜面の記号のまま（Aメロ等の名前は付いていない）。テンポは譜面の98
-const MERRY_PRESET = presetFromText({ name: "いつかのメリークリスマス（コード譜）", meter: 4, bpm: 98, key: 0, rh: "arp", lh: "w", text: "[A] | G - D - | C - G - | C - D - | G | Em - D - | C - G - | Am - Bm7 - | Cmaj7 |\n[B] | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 |\n[C] | Gmaj7 Cmaj7 - - | Bm7 | Am7 - Am7/D D | Gmaj7 | Cmaj7 | Bm7 | Am7 - Am7/D - | Gmaj7 |\n[D] | Cmaj7 | Bm7 | F#m7 - B7 - | Em D/F# G - | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 - D - |\n[E] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 - D - |\n[F] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 | % |\n[G] | % | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 |\n[H] | Cmaj7 | Bm7 | F#m7 - B7 - | Em D/F# G - | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 - D - |\n[I] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 - D - |\n[J] | G - D - | C - G - | C - D - | G | Em - D - | C - G - | Am7 - Bm7 - | Cmaj7 | % |\n[K] | % | Bm7 | Am7 | Gmaj7 | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 |\n[L] | Cmaj7 | Bm7 | F#m7 - B7 - | Em D/F# G - | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 - D - |\n[M] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 |\n[N] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 | % | % |\n[O] | % | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 |\n[P] | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | % | % |" });
+// 2026-11-19 みかさん「今後はAメロBメロサビと分けて」→ 区切りを譜面の記号 A〜P から名前に（右手の節を区間どうしで照らして決めた。K＝Cメロ は歌か間奏か未確認・O＝Aメロ3 は節がAメロと同じ）
+const MERRY_PRESET = presetFromText({ name: "いつかのメリークリスマス（コード譜）", meter: 4, bpm: 98, key: 0, rh: "arp", lh: "w", text: "[イントロ1] | G - D - | C - G - | C - D - | G | Em - D - | C - G - | Am - Bm7 - | Cmaj7 |\n[イントロ2] | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 |\n[Aメロ1] | Gmaj7 Cmaj7 - - | Bm7 | Am7 - Am7/D D | Gmaj7 | Cmaj7 | Bm7 | Am7 - Am7/D - | Gmaj7 |\n[Bメロ1] | Cmaj7 | Bm7 | F#m7 - B7 - | Em D/F# G - | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 - D - |\n[サビ1前半] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 - D - |\n[サビ1後半] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 | % |\n[Aメロ2] | % | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 |\n[Bメロ2] | Cmaj7 | Bm7 | F#m7 - B7 - | Em D/F# G - | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 - D - |\n[サビ2前半] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 - D - |\n[サビ2後半] | G - D - | C - G - | C - D - | G | Em - D - | C - G - | Am7 - Bm7 - | Cmaj7 | % |\n[Cメロ] | % | Bm7 | Am7 | Gmaj7 | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 |\n[Bメロ3] | Cmaj7 | Bm7 | F#m7 - B7 - | Em D/F# G - | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 - D - |\n[大サビ前半] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 |\n[大サビ後半] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 | % | % |\n[Aメロ3] | % | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 |\n[アウトロ] | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | % | % |" });
 const MERRY_LESSON = { ...MERRY_PRESET, name: "いつかのメリークリスマス（レッスン版）", scoreId: "merry-v1",
   // 2026-11-17 みかさん「サビで左手おかしくなる」「DEFらへんからずれてる・音がぶつかる」「Easyも入れたからEasy寄りで作り直して」
   //   → 譜面の音を Easy 版（いつかのメリークリスマスEasy.xml）に差し替え、右手・左手とも譜面どおり（コードと左右の手が同じ譜面から出るのでぶつからない）。B の4小節はみかさんが聞いた形のまま
@@ -550,6 +552,12 @@ const TGB_PRESET = presetFromText(
 const TGB_LESSON = { ...TGB_PRESET, name: "TimeGoesBy（レッスン版）", scoreId: "timegoesby-v1",
   rh: "song", lh: "kizami", vocalRh: "guide", swing: "straight", countIn: false, leadBars: 2, order: [] };
 PRESETS.push(TGB_LESSON, TGB_PRESET); // preset:7 / preset:8
+// 2026-11-19 みかさん「日食さんの廊下を走るな。これもないぞ」→ ~/Downloads の耳コピ譜（MusicXML）から tools/rouka_convert.py・rouka_preset.py で作った（94小節・テンポ79）。
+//   譜面は頭の拍子が 2/4 と 4/4 入り混じりで、全体を 4/4 に切り直した。21小節目（サビ1の前の Ab）は左手を2拍足し、落ちサビの頭は1拍抜いてある。区切りは節を区間どうしで照らして名前を付けた
+const ROUKA_PRESET = presetFromText({ name: "廊下を走るな（コード譜）", meter: 4, bpm: 79, key: 0, rh: "arp", lh: "w", text: "[イントロ] | Db - Ab/C Bbm7 | Ab Gb - - | Db - Ab/C Bbm7 | Ab Gb - - |\n[Aメロ1] | Db - Ab/C Bbm7 | Ab Gb - - | Fm Gb - - | Ab Bbm7 - Ab | Db - Ab/C Bbm7 | Ab Gb - - | Db/F Gb - - | Gbm/Ab Db - - |\n[Bメロ1] | Gb - Ab - | Fm7 - Bbm7 - | Gb - Ab - | Fm7 - Bbm7 - | Gb - Ab - | Fm7 F/A Bbm7 - | B | Ebm7 - Absus4 - | Ab |\n[サビ1] | Db - Ab - | Bbm7 - Abm7 - | Gb - Db/F - | Eb7 - Gb/Ab Abm7 | Db - Ab - | Bbm7 - Abm - | Gb - Fm7 Bbm7 | Ebm7 Ab Db - |\n[間奏1] | Db - Ab/C Ab | Ab - Gb - | Db - Ab/C Db | Db Gb - Gbm |\n[Aメロ2] | Db - Ab/C Bbm7 | Bbm7 Ab Gb - | Fm7 Gb - - | Ab Bbm7 - Ab | Db - Ab/C Ab | Abm Gb - - | Db/F Gb - - | Gbm Db - - |\n[Bメロ2] | Gb - Gb/Ab - | Fm7 - Bbm7 - | Gb - Ab - | Fm7 - Bbm7 - | Gb - Gb/Ab - | Fm7 F/A Bbm7 - | B | Ebm7 - Ab - |\n[サビ2] | Db - Ab - | Bbm - Abm - | Gb - Db/F - | Eb7 - Gb/Ab Abm7 | Db - Ab - | Bbm7 - Abm - | Gb - Fm7 Bbm7 | Ebm7 Ab Db - |\n[Cメロ] | Gb - Db/F - | Ebm7 Ab Db - | Gb - Db/F Bbm | Ebm7 - Gb/Ab Db | Gb - Db/F - | Ebm7 F7 Bbm7 Bbm7/Ab | Gb Ab F/A Bbm | Ebm7 - - Db |\n[間奏2] | Db Ab Bbm7 - | Gb | Db Ab Bbm7 - | Gb |\n[落ちサビ] | Db - Ab - | Bbm7 - Abm - | Gb - Db - | Gb - Gb/Ab Abm7 | Db - Ab - | Bbm7 - Abm - | Gb - Fm7 Bbm7 | Ebm7 Gb/Ab Db A |\n[大サビ1] | D - A - | Bm - Am - | G - D/F# - | E - A Am7 | D - A - | Bm - Am7 - | G - F#m Bm | Em7 A D - |\n[大サビ2] | G/D | D - Bm - | G - F# Bm | G - D - |\n[アウトロ] | D - A/C# F#m | F#m G - A | D - A/C# Bm7 | D Gm - A | D - A/C# A |" });
+const ROUKA_LESSON = { ...ROUKA_PRESET, name: "廊下を走るな（レッスン版）", scoreId: "rouka-v1",
+  rh: "score", lh: "score", countIn: false, leadBars: 2, order: [] };
+PRESETS.push(ROUKA_LESSON, ROUKA_PRESET); // preset:9 / preset:10
 
 // ---- 伴奏：音の並びを作る（先生・生徒の両方で同じ計算） ----
 // 拍は4分音符=1。barOffs は小節の中で音を出す位置
@@ -792,8 +800,10 @@ function setupAcc(send) {
     add("preset:4", MERRY_PRESET.name);
     add("preset:5", OD_LESSON.name);
     add("preset:7", TGB_LESSON.name);
+    add("preset:9", ROUKA_LESSON.name);
     add("preset:6", OD_PRESET.name);
     add("preset:8", TGB_PRESET.name);
+    add("preset:10", ROUKA_PRESET.name);
     add("", SAMPLE.name);
     Object.keys(savedSongs()).sort().forEach(n => add(n, n));
     l.value = sel != null && [...l.options].some(o => o.value === sel) ? sel : Object.hasOwn(savedSongs(),song.name) ? song.name : "preset:"+Math.max(0,PRESETS.findIndex(p=>p.name===song.name));
@@ -1255,7 +1265,7 @@ function student(code) {
 // ---- ひとりで練習（?practice=overdrive）----
 // 2026-11-18 みかさん「このOverDriveを実際のレッスン生がパソコンだかスマホだかで開けるようにしておいて」
 const params = new URLSearchParams(location.search);
-const PRACTICE_SONGS = { overdrive: OD_LESSON, timegoesby: TGB_LESSON, merry: MERRY_LESSON, tsutsumi: LESSON_PRESET };
+const PRACTICE_SONGS = { overdrive: OD_LESSON, timegoesby: TGB_LESSON, rouka: ROUKA_LESSON, merry: MERRY_LESSON, tsutsumi: LESSON_PRESET };
 // 先生の今の設定をURLに入れる（r=メロディの音量・l=伴奏の音量・bpm・key・rh・lh）。開いた側は cleanSong で範囲を確かめてから使う
 const PRACTICE_FIELDS = { r: "rightVolume", l: "leftVolume", bpm: "bpm", key: "key", rh: "rh", lh: "lh", vr: "vocalRh", sw: "swing", tail: "tailBars" };
 const PRACTICE_TEXT = ["rh", "lh", "vr", "sw"];
