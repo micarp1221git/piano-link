@@ -279,14 +279,14 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="lesson-data.js?v=20261119f"></script>
-<script src="lesson-data-merry.js?v=20261119f"></script>
-<script src="lesson-data-overdrive.js?v=20261119f"></script>
-<script src="lesson-data-timegoesby.js?v=20261119f"></script>
-<script src="lesson-data-rouka.js?v=20261119f"></script>
-<script src="lesson-core.js?v=20261119f"></script>
-<script src="lesson-audio.js?v=20261119f"></script>
-<script src="lesson-ui.js?v=20261119f"></script>
+<script src="lesson-data.js?v=20261119g"></script>
+<script src="lesson-data-merry.js?v=20261119g"></script>
+<script src="lesson-data-overdrive.js?v=20261119g"></script>
+<script src="lesson-data-timegoesby.js?v=20261119g"></script>
+<script src="lesson-data-rouka.js?v=20261119g"></script>
+<script src="lesson-core.js?v=20261119g"></script>
+<script src="lesson-audio.js?v=20261119g"></script>
+<script src="lesson-ui.js?v=20261119g"></script>
 <script>
 "use strict";
 const PREFIX = "mika-piano-";
@@ -525,9 +525,10 @@ PRESETS.push(LESSON_PRESET);
 //   ※譜面の音を合わせるほど変になった（右手が空・低い音と和音が1小節ずれ）。B の音は4分の和音＋左手の根音で作り直した
 // コードは譜面の表記どおり・区切りの A〜P は譜面の記号のまま（Aメロ等の名前は付いていない）。テンポは譜面の98
 // 2026-11-19 みかさん「今後はAメロBメロサビと分けて」→ 区切りを譜面の記号 A〜P から名前に（右手の節を区間どうしで照らして決めた。K＝Cメロ は歌か間奏か未確認・O＝Aメロ3 は節がAメロと同じ）
-const MERRY_PRESET = presetFromText({ name: "いつかのメリークリスマス（コード譜）", meter: 4, bpm: 98, key: 0, rh: "arp", lh: "w", text: "[イントロ1] | G - D - | C - G - | C - D - | G | Em - D - | C - G - | Am - Bm7 - | Cmaj7 |\n[イントロ2] | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 |\n[Aメロ1] | Gmaj7 Cmaj7 - - | Bm7 | Am7 - Am7/D D | Gmaj7 | Cmaj7 | Bm7 | Am7 - Am7/D - | Gmaj7 |\n[Bメロ1] | Cmaj7 | Bm7 | F#m7 - B7 - | Em D/F# G - | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 - D - |\n[サビ1前半] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 - D - |\n[サビ1後半] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 | % |\n[Aメロ2] | % | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 |\n[Bメロ2] | Cmaj7 | Bm7 | F#m7 - B7 - | Em D/F# G - | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 - D - |\n[サビ2前半] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 - D - |\n[サビ2後半] | G - D - | C - G - | C - D - | G | Em - D - | C - G - | Am7 - Bm7 - | Cmaj7 | % |\n[Cメロ] | % | Bm7 | Am7 | Gmaj7 | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 |\n[Bメロ3] | Cmaj7 | Bm7 | F#m7 - B7 - | Em D/F# G - | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 - D - |\n[大サビ前半] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 |\n[大サビ後半] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 | % | % |\n[Aメロ3] | % | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 |\n[アウトロ] | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | % | % |" });
+const MERRY_PRESET = presetFromText({ name: "いつかのメリークリスマス（コード譜）", meter: 4, bpm: 98, key: 0, rh: "arp", lh: "w", text: "[イントロ1] | G - D - | C - G - | C - D - | G | Em - D - | C - G - | Am - Bm7 - | Cmaj7 |\n[イントロ2] | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 |\n[Aメロ1] | Cmaj7 | Bm7 | Am7 - Am7/D D | Gmaj7 | Cmaj7 | Bm7 | Am7 - Am7/D - | Gmaj7 |\n[Bメロ1] | Cmaj7 | Bm7 | F#m7 - B7 - | Em D/F# G - | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 - D - |\n[サビ1前半] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 - D - |\n[サビ1後半] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 | % |\n[Aメロ2] | % | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 |\n[Bメロ2] | Cmaj7 | Bm7 | F#m7 - B7 - | Em D/F# G - | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 - D - |\n[サビ2前半] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 - D - |\n[サビ2後半] | G - D - | C - G - | C - D - | G | Em - D - | C - G - | Am7 - Bm7 - | Cmaj7 | % |\n[間奏] | % | Bm7 | Am7 | Gmaj7 | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 |\n[Bメロ3] | Cmaj7 | Bm7 | F#m7 - B7 - | Em D/F# G - | Am7 - D - | Gmaj7 - Cmaj7 - | F#m7 | B7 - D - |\n[大サビ前半] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 |\n[大サビ後半] | G - D - | C - G - | C - D - | G | Em7 - D - | C - G - | Am7 - Bm7 - | Cmaj7 | % | % |\n[Aメロ3] | % | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 |\n[アウトロ] | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | Gmaj7 | Cmaj7 | Bm7 | Am7 - D - | % |" });
 const MERRY_LESSON = { ...MERRY_PRESET, name: "いつかのメリークリスマス（レッスン版）", scoreId: "merry-v1",
   // 2026-11-17 みかさん「サビで左手おかしくなる」「DEFらへんからずれてる・音がぶつかる」「Easyも入れたからEasy寄りで作り直して」
+  // 2026-11-19 みかさん「イントロはアルペジオじゃないですか？ 12小節目の4拍目からAメロが始まります」→ 9〜12小節目の左手を分散和音に、Aメロ1の入り（12小節目の3拍目ウラから ソ・シ・レ）と13小節目（Cmaj7）を音源どおりに（tools/merry_a1_entry.js）
   //   → 譜面の音を Easy 版（いつかのメリークリスマスEasy.xml）に差し替え、右手・左手とも譜面どおり（コードと左右の手が同じ譜面から出るのでぶつからない）。B の4小節はみかさんが聞いた形のまま
   rh: "score", lh: "score", countIn: false, leadBars: 2, order: [] };
 PRESETS.push(MERRY_LESSON, MERRY_PRESET); // preset:3 / preset:4
