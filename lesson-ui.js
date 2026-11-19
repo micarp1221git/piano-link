@@ -47,9 +47,9 @@
         dialog.querySelector('.settings-close').onclick=()=>dialog.close();
         // 2026-11-18 みかさん「私の方と生徒さんのほうと連動させられないか」＝今の設定（音量・速さ・キー・右手左手）をURLに入れて、ひとりで練習のページをその設定で開く
         dialog.querySelector('.lesson-share').onclick=()=> {
-          const msg=dialog.querySelector('.lesson-share-msg'),url=this.deps.practiceUrl&&this.deps.practiceUrl(this.song);
+          const msg=dialog.querySelector('.lesson-share-msg'),full=this.deps.api.getFullSong?this.deps.cleanSong(this.deps.api.getFullSong()):this.song,url=this.deps.practiceUrl&&this.deps.practiceUrl(full);
           if(!url){msg.textContent='この曲は、まだレッスン生用のページがありません';return;}
-          const tail=this.song.order.length?'（弾く順番も入っています）':'';
+          const tail=full.order.length?'（弾く順番も入っています）':'';
           (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>{msg.textContent='コピーしました'+tail;},()=>{msg.textContent=url;});
         };
         this.q('.lesson-open-settings').onclick=()=>{dialog.showModal();$('tabAcc').click();this.deps.api.redraw();};
