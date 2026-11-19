@@ -279,14 +279,14 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="lesson-data.js?v=20261119e"></script>
-<script src="lesson-data-merry.js?v=20261119e"></script>
-<script src="lesson-data-overdrive.js?v=20261119e"></script>
-<script src="lesson-data-timegoesby.js?v=20261119e"></script>
-<script src="lesson-data-rouka.js?v=20261119e"></script>
-<script src="lesson-core.js?v=20261119e"></script>
-<script src="lesson-audio.js?v=20261119e"></script>
-<script src="lesson-ui.js?v=20261119e"></script>
+<script src="lesson-data.js?v=20261119f"></script>
+<script src="lesson-data-merry.js?v=20261119f"></script>
+<script src="lesson-data-overdrive.js?v=20261119f"></script>
+<script src="lesson-data-timegoesby.js?v=20261119f"></script>
+<script src="lesson-data-rouka.js?v=20261119f"></script>
+<script src="lesson-core.js?v=20261119f"></script>
+<script src="lesson-audio.js?v=20261119f"></script>
+<script src="lesson-ui.js?v=20261119f"></script>
 <script>
 "use strict";
 const PREFIX = "mika-piano-";
@@ -552,9 +552,10 @@ const TGB_PRESET = presetFromText(
 const TGB_LESSON = { ...TGB_PRESET, name: "TimeGoesBy（レッスン版）", scoreId: "timegoesby-v1",
   rh: "song", lh: "kizami", vocalRh: "guide", swing: "straight", countIn: false, leadBars: 2, order: [] };
 PRESETS.push(TGB_LESSON, TGB_PRESET); // preset:7 / preset:8
-// 2026-11-19 みかさん「日食さんの廊下を走るな。これもないぞ」→ ~/Downloads の耳コピ譜（MusicXML）から tools/rouka_convert.py・rouka_preset.py で作った（94小節・テンポ79）。
+// 2026-11-19 みかさん「日食さんの廊下を走るな。これもないぞ」→ ~/Downloads の耳コピ譜（MusicXML）から tools/rouka_convert.py・rouka_preset.py で作った（95小節・テンポ79）。
+// 2026-11-19 みかさん「イントロ〜Aメロで違和感。4拍目の右手のタラランから始まって、次の小節の1拍目から左のコード」→ 耳コピ譜はイントロ〜Aメロ1が半拍早かった。半拍うしろへ直し、頭に1小節（4拍目にタララン）を足した。
 //   譜面は頭の拍子が 2/4 と 4/4 入り混じりで、全体を 4/4 に切り直した。21小節目（サビ1の前の Ab）は左手を2拍足し、落ちサビの頭は1拍抜いてある。区切りは節を区間どうしで照らして名前を付けた
-const ROUKA_PRESET = presetFromText({ name: "廊下を走るな（コード譜）", meter: 4, bpm: 79, key: 0, rh: "arp", lh: "w", text: "[イントロ] | Db - Ab/C Bbm7 | Ab Gb - - | Db - Ab/C Bbm7 | Ab Gb - - |\n[Aメロ1] | Db - Ab/C Bbm7 | Ab Gb - - | Fm Gb - - | Ab Bbm7 - Ab | Db - Ab/C Bbm7 | Ab Gb - - | Db/F Gb - - | Gbm/Ab Db - - |\n[Bメロ1] | Gb - Ab - | Fm7 - Bbm7 - | Gb - Ab - | Fm7 - Bbm7 - | Gb - Ab - | Fm7 F/A Bbm7 - | B | Ebm7 - Absus4 - | Ab |\n[サビ1] | Db - Ab - | Bbm7 - Abm7 - | Gb - Db/F - | Eb7 - Gb/Ab Abm7 | Db - Ab - | Bbm7 - Abm - | Gb - Fm7 Bbm7 | Ebm7 Ab Db - |\n[間奏1] | Db - Ab/C Ab | Ab - Gb - | Db - Ab/C Db | Db Gb - Gbm |\n[Aメロ2] | Db - Ab/C Bbm7 | Bbm7 Ab Gb - | Fm7 Gb - - | Ab Bbm7 - Ab | Db - Ab/C Ab | Abm Gb - - | Db/F Gb - - | Gbm Db - - |\n[Bメロ2] | Gb - Gb/Ab - | Fm7 - Bbm7 - | Gb - Ab - | Fm7 - Bbm7 - | Gb - Gb/Ab - | Fm7 F/A Bbm7 - | B | Ebm7 - Ab - |\n[サビ2] | Db - Ab - | Bbm - Abm - | Gb - Db/F - | Eb7 - Gb/Ab Abm7 | Db - Ab - | Bbm7 - Abm - | Gb - Fm7 Bbm7 | Ebm7 Ab Db - |\n[Cメロ] | Gb - Db/F - | Ebm7 Ab Db - | Gb - Db/F Bbm | Ebm7 - Gb/Ab Db | Gb - Db/F - | Ebm7 F7 Bbm7 Bbm7/Ab | Gb Ab F/A Bbm | Ebm7 - - Db |\n[間奏2] | Db Ab Bbm7 - | Gb | Db Ab Bbm7 - | Gb |\n[落ちサビ] | Db - Ab - | Bbm7 - Abm - | Gb - Db - | Gb - Gb/Ab Abm7 | Db - Ab - | Bbm7 - Abm - | Gb - Fm7 Bbm7 | Ebm7 Gb/Ab Db A |\n[大サビ1] | D - A - | Bm - Am - | G - D/F# - | E - A Am7 | D - A - | Bm - Am7 - | G - F#m Bm | Em7 A D - |\n[大サビ2] | G/D | D - Bm - | G - F# Bm | G - D - |\n[アウトロ] | D - A/C# F#m | F#m G - A | D - A/C# Bm7 | D Gm - A | D - A/C# A |" });
+const ROUKA_PRESET = presetFromText({ name: "廊下を走るな（コード譜）", meter: 4, bpm: 79, key: 0, rh: "arp", lh: "w", text: "[イントロ] | N.C. | Db - Ab/C Bbm7 | Ab Gb - - | Db - Ab/C Bbm7 | Ab Gb - - |\n[Aメロ1] | Db - Ab/C Bbm7 | Ab Gb - - | Fm Gb - - | Ab Bbm7 - Ab | Db - Ab/C Bbm7 | Ab Gb - - | Db/F Gb - - | Gbm/Ab Db - - |\n[Bメロ1] | Gb - Ab - | Fm7 - Bbm7 - | Gb - Ab - | Fm7 - Bbm7 - | Gb - Ab - | Fm7 F/A Bbm7 - | B | Ebm7 - Absus4 - | Ab |\n[サビ1] | Db - Ab - | Bbm7 - Abm7 - | Gb - Db/F - | Eb7 - Gb/Ab Abm7 | Db - Ab - | Bbm7 - Abm - | Gb - Fm7 Bbm7 | Ebm7 Ab Db - |\n[間奏1] | Db - Ab/C Ab | Ab - Gb - | Db - Ab/C Db | Db Gb - Gbm |\n[Aメロ2] | Db - Ab/C Bbm7 | Bbm7 Ab Gb - | Fm7 Gb - - | Ab Bbm7 - Ab | Db - Ab/C Ab | Abm Gb - - | Db/F Gb - - | Gbm Db - - |\n[Bメロ2] | Gb - Gb/Ab - | Fm7 - Bbm7 - | Gb - Ab - | Fm7 - Bbm7 - | Gb - Gb/Ab - | Fm7 F/A Bbm7 - | B | Ebm7 - Ab - |\n[サビ2] | Db - Ab - | Bbm - Abm - | Gb - Db/F - | Eb7 - Gb/Ab Abm7 | Db - Ab - | Bbm7 - Abm - | Gb - Fm7 Bbm7 | Ebm7 Ab Db - |\n[Cメロ] | Gb - Db/F - | Ebm7 Ab Db - | Gb - Db/F Bbm | Ebm7 - Gb/Ab Db | Gb - Db/F - | Ebm7 F7 Bbm7 Bbm7/Ab | Gb Ab F/A Bbm | Ebm7 - - Db |\n[間奏2] | Db Ab Bbm7 - | Gb | Db Ab Bbm7 - | Gb |\n[落ちサビ] | Db - Ab - | Bbm7 - Abm - | Gb - Db - | Gb - Gb/Ab Abm7 | Db - Ab - | Bbm7 - Abm - | Gb - Fm7 Bbm7 | Ebm7 Gb/Ab Db A |\n[大サビ1] | D - A - | Bm - Am - | G - D/F# - | E - A Am7 | D - A - | Bm - Am7 - | G - F#m Bm | Em7 A D - |\n[大サビ2] | G/D | D - Bm - | G - F# Bm | G - D - |\n[アウトロ] | D - A/C# F#m | F#m G - A | D - A/C# Bm7 | D Gm - A | D - A/C# A |" });
 const ROUKA_LESSON = { ...ROUKA_PRESET, name: "廊下を走るな（レッスン版）", scoreId: "rouka-v1",
   rh: "score", lh: "score", countIn: false, leadBars: 2, order: [] };
 PRESETS.push(ROUKA_LESSON, ROUKA_PRESET); // preset:9 / preset:10

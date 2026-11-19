@@ -108,6 +108,26 @@ for B in sheet:
     for pos, sym in B['chords']:
         if pos < L + 1e-6: chords.append((t0 + min(pos, L - 0.001) + shift(pos), sym, B['i']))
     t0 += L + sum(n for _, n, _ in pads_here)
+# 7) 頭の直し（2026-11-19 みかさん「イントロ〜Aメロで違和感。イントロは4拍目の右手の16分のタラランから始まって、次の小節の1拍目から左のコード」）
+#    音源と照らすと、耳コピ譜はイントロ〜Aメロ1（HEAD_END まで）が半拍早く、頭のタラランが抜けていた（間奏1・Aメロ2は合っている）
+#    a) HEAD_END より前の音を半拍うしろへ。HEAD_END を越えた左手と、同じ音が重なった右手は捨てる
+#    b) リフ1回目の頭2拍は耳コピが崩れているので、リフ2回目の頭2拍を写す
+#    c) 頭に1小節足して、4拍目にリフ2回目の前のタララン（右手だけ）を置く
+HEAD_END, HEAD_SHIFT, RIFF = 44.0, 0.5, 8.0
+have = {(n[0], n[1], n[3]) for n in notes if n[0] >= HEAD_END - 1e-9}
+fixed = []
+for n in notes:
+    if n[0] >= HEAD_END - 1e-9: fixed.append(n); continue
+    p = round(n[0] + HEAD_SHIFT, 4)
+    if p >= HEAD_END - 1e-9 and (n[3] == 2 or (p, n[1], n[3]) in have): continue
+    d = n[2] if n[3] == 1 else min(n[2], HEAD_END - p)
+    fixed.append([p, n[1], round(d, 4), n[3]])
+riff2 = [[round(n[0] - RIFF, 4), n[1], n[2], n[3]] for n in fixed if RIFF - 1e-9 <= n[0] < RIFF + 2 - 1e-9]
+pickup = [[round(n[0] - RIFF + METER, 4), n[1], n[2], 1] for n in fixed if RIFF - 1 - 1e-9 <= n[0] < RIFF - 1e-9 and n[3] == 1]
+notes = pickup + [[round(n[0] + METER, 4), n[1], n[2], n[3]] for n in riff2 + [n for n in fixed if n[0] >= 2 - 1e-9]]
+chords = [(t + METER, sym, b) for t, sym, b in chords]; marks = [(t + METER, m) for t, m in marks]
+bar_map = [(b, t + METER, L) for b, t, L in bar_map]
+t0 += METER
 total = t0; bars = int(round(total / METER))
 assert abs(total - bars * METER) < 1e-6, total
 notes.sort(key=lambda n: (n[0], n[1]))
