@@ -279,15 +279,15 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="lesson-data.js?v=20261125c"></script>
-<script src="lesson-data-merry.js?v=20261125c"></script>
-<script src="lesson-data-overdrive.js?v=20261125c"></script>
-<script src="lesson-data-timegoesby.js?v=20261125c"></script>
-<script src="lesson-data-rouka.js?v=20261125c"></script>
-<script src="lesson-data-itsumo.js?v=20261125c"></script>
-<script src="lesson-core.js?v=20261125c"></script>
-<script src="lesson-audio.js?v=20261125c"></script>
-<script src="lesson-ui.js?v=20261125c"></script>
+<script src="lesson-data.js?v=20261125d"></script>
+<script src="lesson-data-merry.js?v=20261125d"></script>
+<script src="lesson-data-overdrive.js?v=20261125d"></script>
+<script src="lesson-data-timegoesby.js?v=20261125d"></script>
+<script src="lesson-data-rouka.js?v=20261125d"></script>
+<script src="lesson-data-itsumo.js?v=20261125d"></script>
+<script src="lesson-core.js?v=20261125d"></script>
+<script src="lesson-audio.js?v=20261125d"></script>
+<script src="lesson-ui.js?v=20261125d"></script>
 <script>
 "use strict";
 const PREFIX = "mika-piano-";
@@ -569,7 +569,8 @@ const ITSUMO_PRESET = presetFromText({ name: "いつも何度でも（木村弓�
 //   メロディーは音源の歌の高さから起こしたガイド。右手＝ガイドメロディー＋小さい和音、左手＝分散和音。カウントは1小節目に3つ・2小節目に2つ（歌は2小節目の3拍目から）
 const ITSUMO_LESSON = { ...ITSUMO_PRESET, name: "いつも何度でも（木村弓キー・レッスン版）", scoreId: "itsumo-v1",
   // 2026-11-25 17:0x みかさん「ガイドメロディーが全然ダメ」→ 直るまで、右手は分散和音（メロディーは鳴らさない）。カウントはそのまま
-  rh: "arp", lh: "w", vocalRh: "guide", swing: "straight", countIn: false, leadBars: 2, order: [] };
+  //   → 17:2x 音源から声だけを分けて読み直したメロディーに差し替え、ガイドメロディーに戻した
+  rh: "song", lh: "arp", vocalRh: "guide", swing: "straight", countIn: false, leadBars: 2, order: [] };
 PRESETS.push(ITSUMO_PRESET, ITSUMO_LESSON); // preset:11 / preset:12
 
 // ---- 伴奏：音の並びを作る（先生・生徒の両方で同じ計算） ----
