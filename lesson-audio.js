@@ -6,6 +6,8 @@
   class LessonAudio {
     constructor() {this.buffers=new Map();this.sources=new Set();this.timer=null;this.enabled=false;this.generation=0;}
     async prepare() {
+      // 2026-11-25 みかさん「iPhoneから音がならない」＝iPhoneは消音スイッチ（集中モードの消音も）でページの音が止まる。音楽の再生として扱ってもらう（iOS 17〜）
+      try{if(navigator.audioSession)navigator.audioSession.type=playback;}catch(_){}
       this.context ||= new (window.AudioContext||window.webkitAudioContext)();
       await this.context.resume();
       if(this.buffers.size===PITCHES.length) {this.enabled=true;return;}
