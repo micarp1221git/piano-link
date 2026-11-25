@@ -279,16 +279,17 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="lesson-data.js?v=20261126a"></script>
-<script src="lesson-data-merry.js?v=20261126a"></script>
-<script src="lesson-data-overdrive.js?v=20261126a"></script>
-<script src="lesson-data-timegoesby.js?v=20261126a"></script>
-<script src="lesson-data-rouka.js?v=20261126a"></script>
-<script src="lesson-data-itsumo.js?v=20261126a"></script>
-<script src="lesson-data-overdrive-audio.js?v=20261126a"></script>
-<script src="lesson-core.js?v=20261126a"></script>
-<script src="lesson-audio.js?v=20261126a"></script>
-<script src="lesson-ui.js?v=20261126a"></script>
+<script src="lesson-data.js?v=20261126b"></script>
+<script src="lesson-data-merry.js?v=20261126b"></script>
+<script src="lesson-data-overdrive.js?v=20261126b"></script>
+<script src="lesson-data-timegoesby.js?v=20261126b"></script>
+<script src="lesson-data-rouka.js?v=20261126b"></script>
+<script src="lesson-data-itsumo.js?v=20261126b"></script>
+<script src="lesson-data-overdrive-audio.js?v=20261126b"></script>
+<script src="lesson-data-overdrive-mix.js?v=20261126b"></script>
+<script src="lesson-core.js?v=20261126b"></script>
+<script src="lesson-audio.js?v=20261126b"></script>
+<script src="lesson-ui.js?v=20261126b"></script>
 <script>
 "use strict";
 const PREFIX = "mika-piano-";
@@ -577,7 +578,9 @@ PRESETS.push(ITSUMO_PRESET, ITSUMO_LESSON); // preset:11 / preset:12
 const OD_AUDIO = { ...OD_PRESET, name: "OverDrive（音源から読んだ試し）", scoreId: "overdrive-a1", rh: "song", lh: "score", vocalRh: "guide", swing: "straight", countIn: false, leadBars: 2, order: [],
   // 11/26 歌の無い区切り（音源で声がほぼ無い所）は、右手が譜面データ（その他の音の立ち上がりで打つコード）をそのまま弾く
   sections: OD_PRESET.sections.map(s => ["A", "B", "H", "I", "O"].includes(s.name) ? { ...s, sing: false } : s) };
-PRESETS.push(OD_AUDIO); // preset:13
+// 11/26 みかさん「もともと作っておいたオーバードライブを参考に、何がずれてるのか確認できませんか」→ 合わせた版＝右手はいまのレッスン版（overdrive-v1）のまま・左手は音源から読んだベース・歌の前にカウント
+const OD_MIX = { ...OD_PRESET, name: "OverDrive（右手は譜面・ベースは音源）", scoreId: "overdrive-m1", rh: "score", lh: "score", swing: "straight", countIn: false, leadBars: 2, order: [] };
+PRESETS.push(OD_AUDIO, OD_MIX); // preset:13 / preset:14
 
 // ---- 伴奏：音の並びを作る（先生・生徒の両方で同じ計算） ----
 // 拍は4分音符=1。barOffs は小節の中で音を出す位置
@@ -823,6 +826,7 @@ function setupAcc(send) {
     add("preset:9", ROUKA_LESSON.name);
     add("preset:12", ITSUMO_LESSON.name);
     add("preset:13", OD_AUDIO.name);
+    add("preset:14", OD_MIX.name);
     add("preset:6", OD_PRESET.name);
     add("preset:8", TGB_PRESET.name);
     add("preset:10", ROUKA_PRESET.name);
@@ -1288,7 +1292,7 @@ function student(code) {
 // ---- ひとりで練習（?practice=overdrive）----
 // 2026-11-18 みかさん「このOverDriveを実際のレッスン生がパソコンだかスマホだかで開けるようにしておいて」
 const params = new URLSearchParams(location.search);
-const PRACTICE_SONGS = { overdrive: OD_LESSON, timegoesby: TGB_LESSON, rouka: ROUKA_LESSON, itsumo: ITSUMO_LESSON, odtest: OD_AUDIO, merry: MERRY_LESSON, tsutsumi: LESSON_PRESET };
+const PRACTICE_SONGS = { overdrive: OD_LESSON, timegoesby: TGB_LESSON, rouka: ROUKA_LESSON, itsumo: ITSUMO_LESSON, odtest: OD_AUDIO, odmix: OD_MIX, merry: MERRY_LESSON, tsutsumi: LESSON_PRESET };
 // 先生の今の設定をURLに入れる（r=メロディの音量・l=伴奏の音量・bpm・key・rh・lh）。開いた側は cleanSong で範囲を確かめてから使う
 const PRACTICE_FIELDS = { r: "rightVolume", l: "leftVolume", bpm: "bpm", key: "key", rh: "rh", lh: "lh", vr: "vocalRh", sw: "swing", tail: "tailBars" };
 const PRACTICE_TEXT = ["rh", "lh", "vr", "sw"];
