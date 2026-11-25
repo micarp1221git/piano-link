@@ -7,7 +7,19 @@
     constructor() {this.buffers=new Map();this.sources=new Set();this.timer=null;this.enabled=false;this.generation=0;}
     async prepare() {
       // 2026-11-25 みかさん「iPhoneから音がならない」＝iPhoneは消音スイッチ（集中モードの消音も）でページの音が止まる。音楽の再生として扱ってもらう（iOS 17〜）
-      try{if(navigator.audioSession)navigator.audioSession.type=playback;}catch(_){}
+      try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch(_){}
+      // 同じ日 23:47 の画面: 再生中・音の部品18個・鳴らしている音6つ、なのに聞こえない＝iPhone側が止めている。
+      // 古いiOSやアプリの中のブラウザ向けに、無音の <audio> を回しておく（これがあるとページの音が「音楽」として扱われ、消音でも鳴る）
+      if(!this.keepAlive&&(/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Macintosh/.test(navigator.userAgent)))) {
+        try {
+          const rate=8000,len=rate/2,buf=new ArrayBuffer(44+len),v=new DataView(buf),w=(o,t)=>[...t].forEach((c,i)=>v.setUint8(o+i,c.charCodeAt(0)));
+          w(0,'RIFF');v.setUint32(4,36+len,true);w(8,'WAVEfmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+          v.setUint32(24,rate,true);v.setUint32(28,rate,true);v.setUint16(32,1,true);v.setUint16(34,8,true);w(36,'data');v.setUint32(40,len,true);
+          new Uint8Array(buf,44).fill(128);
+          const a=new Audio(URL.createObjectURL(new Blob([buf],{type:'audio/wav'})));
+          a.loop=true;a.setAttribute('playsinline','');a.setAttribute('x-webkit-airplay','deny');a.play().catch(()=>{});this.keepAlive=a;
+        } catch(e){this.keepAliveError=String(e);}
+      }
       this.context ||= new (window.AudioContext||window.webkitAudioContext)();
       await this.context.resume();
       if(this.buffers.size===PITCHES.length) {this.enabled=true;return;}
