@@ -279,15 +279,16 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="lesson-data.js?v=20261125d"></script>
-<script src="lesson-data-merry.js?v=20261125d"></script>
-<script src="lesson-data-overdrive.js?v=20261125d"></script>
-<script src="lesson-data-timegoesby.js?v=20261125d"></script>
-<script src="lesson-data-rouka.js?v=20261125d"></script>
-<script src="lesson-data-itsumo.js?v=20261125d"></script>
-<script src="lesson-core.js?v=20261125d"></script>
-<script src="lesson-audio.js?v=20261125d"></script>
-<script src="lesson-ui.js?v=20261125d"></script>
+<script src="lesson-data.js?v=20261125e"></script>
+<script src="lesson-data-merry.js?v=20261125e"></script>
+<script src="lesson-data-overdrive.js?v=20261125e"></script>
+<script src="lesson-data-timegoesby.js?v=20261125e"></script>
+<script src="lesson-data-rouka.js?v=20261125e"></script>
+<script src="lesson-data-itsumo.js?v=20261125e"></script>
+<script src="lesson-data-overdrive-audio.js?v=20261125e"></script>
+<script src="lesson-core.js?v=20261125e"></script>
+<script src="lesson-audio.js?v=20261125e"></script>
+<script src="lesson-ui.js?v=20261125e"></script>
 <script>
 "use strict";
 const PREFIX = "mika-piano-";
@@ -572,6 +573,9 @@ const ITSUMO_LESSON = { ...ITSUMO_PRESET, name: "いつも何度でも（木村�
   //   → 17:2x 音源から声だけを分けて読み直したメロディーに差し替え、ガイドメロディーに戻した
   rh: "song", lh: "arp", vocalRh: "guide", swing: "straight", countIn: false, leadBars: 2, order: [] };
 PRESETS.push(ITSUMO_PRESET, ITSUMO_LESSON); // preset:11 / preset:12
+// 2026-11-25 みかさん「8分・16分・休符も反映できるなら五線譜は不要。ベースのグルーブ感も」＝音源から声とベースを分けて、16分のマス目で読んだ試し（作り方: Vault オンラインピアノ/README）
+const OD_AUDIO = { ...OD_PRESET, name: "OverDrive（音源から読んだ試し）", scoreId: "overdrive-a1", rh: "song", lh: "score", vocalRh: "guide", swing: "straight", countIn: false, leadBars: 2, order: [] };
+PRESETS.push(OD_AUDIO); // preset:13
 
 // ---- 伴奏：音の並びを作る（先生・生徒の両方で同じ計算） ----
 // 拍は4分音符=1。barOffs は小節の中で音を出す位置
@@ -816,6 +820,7 @@ function setupAcc(send) {
     add("preset:7", TGB_LESSON.name);
     add("preset:9", ROUKA_LESSON.name);
     add("preset:12", ITSUMO_LESSON.name);
+    add("preset:13", OD_AUDIO.name);
     add("preset:6", OD_PRESET.name);
     add("preset:8", TGB_PRESET.name);
     add("preset:10", ROUKA_PRESET.name);
@@ -1281,7 +1286,7 @@ function student(code) {
 // ---- ひとりで練習（?practice=overdrive）----
 // 2026-11-18 みかさん「このOverDriveを実際のレッスン生がパソコンだかスマホだかで開けるようにしておいて」
 const params = new URLSearchParams(location.search);
-const PRACTICE_SONGS = { overdrive: OD_LESSON, timegoesby: TGB_LESSON, rouka: ROUKA_LESSON, itsumo: ITSUMO_LESSON, merry: MERRY_LESSON, tsutsumi: LESSON_PRESET };
+const PRACTICE_SONGS = { overdrive: OD_LESSON, timegoesby: TGB_LESSON, rouka: ROUKA_LESSON, itsumo: ITSUMO_LESSON, odtest: OD_AUDIO, merry: MERRY_LESSON, tsutsumi: LESSON_PRESET };
 // 先生の今の設定をURLに入れる（r=メロディの音量・l=伴奏の音量・bpm・key・rh・lh）。開いた側は cleanSong で範囲を確かめてから使う
 const PRACTICE_FIELDS = { r: "rightVolume", l: "leftVolume", bpm: "bpm", key: "key", rh: "rh", lh: "lh", vr: "vocalRh", sw: "swing", tail: "tailBars" };
 const PRACTICE_TEXT = ["rh", "lh", "vr", "sw"];
