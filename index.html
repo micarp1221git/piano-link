@@ -279,16 +279,16 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="lesson-data.js?v=20261125g"></script>
-<script src="lesson-data-merry.js?v=20261125g"></script>
-<script src="lesson-data-overdrive.js?v=20261125g"></script>
-<script src="lesson-data-timegoesby.js?v=20261125g"></script>
-<script src="lesson-data-rouka.js?v=20261125g"></script>
-<script src="lesson-data-itsumo.js?v=20261125g"></script>
-<script src="lesson-data-overdrive-audio.js?v=20261125g"></script>
-<script src="lesson-core.js?v=20261125g"></script>
-<script src="lesson-audio.js?v=20261125g"></script>
-<script src="lesson-ui.js?v=20261125g"></script>
+<script src="lesson-data.js?v=20261126a"></script>
+<script src="lesson-data-merry.js?v=20261126a"></script>
+<script src="lesson-data-overdrive.js?v=20261126a"></script>
+<script src="lesson-data-timegoesby.js?v=20261126a"></script>
+<script src="lesson-data-rouka.js?v=20261126a"></script>
+<script src="lesson-data-itsumo.js?v=20261126a"></script>
+<script src="lesson-data-overdrive-audio.js?v=20261126a"></script>
+<script src="lesson-core.js?v=20261126a"></script>
+<script src="lesson-audio.js?v=20261126a"></script>
+<script src="lesson-ui.js?v=20261126a"></script>
 <script>
 "use strict";
 const PREFIX = "mika-piano-";
@@ -574,7 +574,9 @@ const ITSUMO_LESSON = { ...ITSUMO_PRESET, name: "いつも何度でも（木村�
   rh: "song", lh: "arp", vocalRh: "guide", swing: "straight", countIn: false, leadBars: 2, order: [] };
 PRESETS.push(ITSUMO_PRESET, ITSUMO_LESSON); // preset:11 / preset:12
 // 2026-11-25 みかさん「8分・16分・休符も反映できるなら五線譜は不要。ベースのグルーブ感も」＝音源から声とベースを分けて、16分のマス目で読んだ試し（作り方: Vault オンラインピアノ/README）
-const OD_AUDIO = { ...OD_PRESET, name: "OverDrive（音源から読んだ試し）", scoreId: "overdrive-a1", rh: "song", lh: "score", vocalRh: "guide", swing: "straight", countIn: false, leadBars: 2, order: [] };
+const OD_AUDIO = { ...OD_PRESET, name: "OverDrive（音源から読んだ試し）", scoreId: "overdrive-a1", rh: "song", lh: "score", vocalRh: "guide", swing: "straight", countIn: false, leadBars: 2, order: [],
+  // 11/26 歌の無い区切り（音源で声がほぼ無い所）は、右手が譜面データ（その他の音の立ち上がりで打つコード）をそのまま弾く
+  sections: OD_PRESET.sections.map(s => ["A", "B", "H", "I", "O"].includes(s.name) ? { ...s, sing: false } : s) };
 PRESETS.push(OD_AUDIO); // preset:13
 
 // ---- 伴奏：音の並びを作る（先生・生徒の両方で同じ計算） ----
