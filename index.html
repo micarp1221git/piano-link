@@ -279,14 +279,14 @@ summary{cursor:pointer;font-size:13px;color:var(--muted);min-height:32px}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="lesson-data.js?v=20261119n"></script>
-<script src="lesson-data-merry.js?v=20261119n"></script>
-<script src="lesson-data-overdrive.js?v=20261119n"></script>
-<script src="lesson-data-timegoesby.js?v=20261119n"></script>
-<script src="lesson-data-rouka.js?v=20261119n"></script>
-<script src="lesson-core.js?v=20261119n"></script>
-<script src="lesson-audio.js?v=20261119n"></script>
-<script src="lesson-ui.js?v=20261119n"></script>
+<script src="lesson-data.js?v=20261125a"></script>
+<script src="lesson-data-merry.js?v=20261125a"></script>
+<script src="lesson-data-overdrive.js?v=20261125a"></script>
+<script src="lesson-data-timegoesby.js?v=20261125a"></script>
+<script src="lesson-data-rouka.js?v=20261125a"></script>
+<script src="lesson-core.js?v=20261125a"></script>
+<script src="lesson-audio.js?v=20261125a"></script>
+<script src="lesson-ui.js?v=20261125a"></script>
 <script>
 "use strict";
 const PREFIX = "mika-piano-";
@@ -560,6 +560,11 @@ const ROUKA_PRESET = presetFromText({ name: "廊下を走るな（コード譜�
 const ROUKA_LESSON = { ...ROUKA_PRESET, name: "廊下を走るな（レッスン版）", scoreId: "rouka-v1",
   rh: "score", lh: "score", countIn: false, leadBars: 2, order: [] };
 PRESETS.push(ROUKA_LESSON, ROUKA_PRESET); // preset:9 / preset:10
+// 2026-11-25 みかさん「いつも何度でも／木村弓を入れて伴奏を弾けるように。木村さんのキーで」→ ~/Downloads の音源（いつも何度でも・木村弓.m4a）から、小節・コード・曲の形を読み取った（ヘ長調・3拍子・154小節・テンポ約128）。
+//   耳コピ譜（MusicXML・MIDI）は拍子と小節がばらばら（3拍子の1小節が4拍ぶんに伸びている）で使っていない。音源のゆれ（息つぎで伸びる小節・最後のAメロの伸び）は、ふつうの3拍子にそろえた
+//   イントロは音源では1小節。歌い出しやすいよう2小節にしてある。メロディー（譜面の音）はまだ入れていない＝コードから鳴らす伴奏だけ
+const ITSUMO_PRESET = presetFromText({ name: "いつも何度でも（木村弓キー・コード譜）", meter: 3, bpm: 128, key: 0, rh: "arp", lh: "w", text: "[イントロ] | F | % |\n[Aメロ1] | F | C | Dm | Am | Bb | F/A | Gm7 | C | F | C | Dm | Am | Bb | F/A | Gm7 - C7 | F | % |\n[Bメロ1] | F | C | Dm | Am | Dm | Bb | Gm7 | C | F | C | Dm | Am | Bb | F/A | Gm7 - C7 | F | % | % |\n[Aメロ2] | F | C | Dm | Am | Bb | F/A | Gm7 | C | F | C | Dm | Am | Bb | F/A | Gm7 - C7 | F | % | % |\n[間奏（ラララ）] | F | C | Dm | Am | Dm | Bb | Gm7 | C | F | C | Dm | Am | Bb | F/A | Gm7 - C7 | F | % | Bb/F | F |\n[Aメロ3] | F | C | Dm | Am | Bb | F/A | Gm7 | C | F | C | Dm | Am | Bb | F/A | Gm7 - C7 | F | % |\n[Bメロ2] | F | C | Dm | Am | Dm | Bb | Gm7 | C | F | C | Dm | Am | Bb | F/A | Gm7 - C7 | F | % | % |\n[Aメロ4] | F | C | Dm | Am | Bb | F/A | Gm7 | C | F | C | Dm | Am | Bb | F/A | Bb | F/A | Bb | F/A | Gm7 - C7 | F | % | % | % |\n[後奏（ラララ）] | F | C | Dm | Am | Dm | Bb | Gm7 | C | F | C | Dm | Am | Bb | F/A | Gm7 - C7 | F |\n[アウトロ] | F | % | % | F/C | F | % |" });
+PRESETS.push(ITSUMO_PRESET); // preset:11
 
 // ---- 伴奏：音の並びを作る（先生・生徒の両方で同じ計算） ----
 // 拍は4分音符=1。barOffs は小節の中で音を出す位置
@@ -803,6 +808,7 @@ function setupAcc(send) {
     add("preset:5", OD_LESSON.name);
     add("preset:7", TGB_LESSON.name);
     add("preset:9", ROUKA_LESSON.name);
+    add("preset:11", ITSUMO_PRESET.name);
     add("preset:6", OD_PRESET.name);
     add("preset:8", TGB_PRESET.name);
     add("preset:10", ROUKA_PRESET.name);
@@ -1267,7 +1273,7 @@ function student(code) {
 // ---- ひとりで練習（?practice=overdrive）----
 // 2026-11-18 みかさん「このOverDriveを実際のレッスン生がパソコンだかスマホだかで開けるようにしておいて」
 const params = new URLSearchParams(location.search);
-const PRACTICE_SONGS = { overdrive: OD_LESSON, timegoesby: TGB_LESSON, rouka: ROUKA_LESSON, merry: MERRY_LESSON, tsutsumi: LESSON_PRESET };
+const PRACTICE_SONGS = { overdrive: OD_LESSON, timegoesby: TGB_LESSON, rouka: ROUKA_LESSON, itsumo: ITSUMO_PRESET, merry: MERRY_LESSON, tsutsumi: LESSON_PRESET };
 // 先生の今の設定をURLに入れる（r=メロディの音量・l=伴奏の音量・bpm・key・rh・lh）。開いた側は cleanSong で範囲を確かめてから使う
 const PRACTICE_FIELDS = { r: "rightVolume", l: "leftVolume", bpm: "bpm", key: "key", rh: "rh", lh: "lh", vr: "vocalRh", sw: "swing", tail: "tailBars" };
 const PRACTICE_TEXT = ["rh", "lh", "vr", "sw"];
